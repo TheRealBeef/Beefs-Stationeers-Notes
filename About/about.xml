@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetadata xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Name>Beef's Recipes</Name>
+    <Author>TheRealBeef</Author>
+    <Version>1.0.0</Version>
+
+    <Description>
+        [h1]Beef's Recipes[/h1]
+        Note-taking panel for keeping track of recipes, tasks, and reminders in-game. Notes are saved per-save-file with support for markdown formatting, interactive checkboxes, and colors.
+
+        [h2]Panel Controls[/h2]
+        - Hover over the right edge of your screen to peek at the panel
+        - Click the right edge to pin it open
+        - Click the chevron (◀) to expand into full edit mode
+        - Click the chevron (▶) to collapse back to pinned mode
+        - Click the right edge when pinned to hide completely
+        - Press Escape to exit edit mode
+
+        [h2]Section Controls[/h2]
+        - Green + button adds new sections
+        - Red X button deletes sections
+        - Tab to move between title and content fields
+        - Click and drag the blue line on the left edge to rearrange sections
+        - Double-click the blue line to collapse a section (turns red)
+        - Double-click the red line to expand it again
+
+        [h2]Text Controls[/h2]
+        - **bold text** for bold text
+        - *italic text* for italic text
+        - - [ ] creates checkboxes you can check
+        - - [x] is a checked checkbox
+
+        NOTE: Checkboxes can be clicked to check/uncheck them in peek and pinned modes
+
+        [h2]Customization[/h2]
+        - Double-click or right-click text to open color picker (titles and content colored separately)
+        - Ctrl + Scroll to change font size
+        - Drag top or bottom handles to resize panel height
+        - Click and drag the ↕ button to move panel vertically
+
+        [h2]Save System[/h2]
+        - Notes saved per-save-file as WorldName/notes/SaveName_notes.json
+        - Automatically syncs when you save your game
+        - Old note files cleaned up when game deletes old saves
+        - JSON format allows manual editing
+        - Safe to remove mod without breaking saves
+
+        [b]WARNING:[/b] This is a BepInEx Plugin Mod. It requires BepInEx to be installed.
+        See: https://github.com/StationeersLaunchPad/StationeersLaunchPad
+
+        Source Code: https://github.com/TheRealBeef/Beefs-Stationeers-Notes
+    </Description>
+
+    <ChangeLog>
+        1.0.0:
+        - Initial release
+    </ChangeLog>
+
+    <Tags>
+        <Tag>Quality of Life</Tag>
+        <Tag>UI</Tag>
+        <Tag>BepInEx</Tag>
+        <Tag>StationeersLaunchPad</Tag>
+    </Tags>
+
+    <InGameDescription>
+        <![CDATA[
+<size=30><color=#ffa500>Beef's Recipes</color></size>
+
+Note-taking panel for keeping track of recipes, tasks, and reminders in-game. Notes are saved per-save-file with support for markdown formatting, interactive checkboxes, and colors.
+
+<b>Panel Controls</b>
+- Hover over the right edge of your screen to peek at the panel
+- Click the right edge to pin it open
+- Click the chevron (◀) to expand into full edit mode
+- Click the chevron (▶) to collapse back to pinned mode
+- Click the right edge when pinned to hide completely
+- Press Escape to exit edit mode
+
+<b>Section Controls</b>
+- Green + button adds new sections
+- Red X button deletes sections
+- Tab to move between title and content fields
+- Click and drag the blue line on the left edge to rearrange sections
+- Double-click the blue line to collapse a section (turns red)
+- Double-click the red line to expand it again
+
+<b>Text Controls</b>
+- **bold text** for bold text
+- *italic text* for italic text
+- - [ ] creates checkboxes you can check
+- - [x] is a checked checkbox
+
+NOTE: Checkboxes can be clicked to check/uncheck them in peek and pinned modes
+
+<b>Customization</b>
+- Double-click or right-click text to open color picker (titles and content colored separately)
+- Ctrl + Scroll to change font size
+- Drag top or bottom handles to resize panel height
+- Click and drag the ↕ button to move panel vertically
+
+<b>Save System</b>
+- Notes saved per-save-file as WorldName/notes/SaveName_notes.json
+- Automatically syncs when you save your game
+- Old note files cleaned up when game deletes old saves
+- JSON format allows manual editing
+- Safe to remove mod without breaking saves
+
+<b>WARNING:</b> <color=#ff0000>This is a BepInEx Plugin Mod. It requires BepInEx to be installed.</color>
+See: https://github.com/StationeersLaunchPad/StationeersLaunchPad
+
+Source Code: https://github.com/TheRealBeef/Beefs-Stationeers-Notes
+]]>
+    </InGameDescription>
+</ModMetadata>
