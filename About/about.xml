@@ -2,7 +2,7 @@
 <ModMetadata xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <Name>Beef's Recipes</Name>
     <Author>TheRealBeef</Author>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
 
     <Description>
         [h1]Beef's Recipes[/h1]
@@ -54,6 +54,9 @@
     <WorkshopHandle>3599774881</WorkshopHandle>
 
     <ChangeLog>
+        1.0.1:
+        - Update button scaling. There's more UI elements that can be scaled later on
+
         1.0.0:
         - Initial release
     </ChangeLog>

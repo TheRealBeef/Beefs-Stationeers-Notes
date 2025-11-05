@@ -7,7 +7,27 @@ namespace BeefsRecipes
 {
     public class RecipesUIManager
     {
-        public const float CollapsedWidth = 10f;
+        private const float RefHeight = 2160f;
+
+        private const float BaseCollapsedWidth = 10f;
+        private const float BaseResizeHandleHeight = 20f;
+        private const int BaseButtonSize = 40;
+        private const int BaseEdgeButtonWidth = 30;
+        private const int BaseSlideButtonSize = 30;
+        private const int BaseChevronFontSize = 24;
+        private const int BaseResizeIndicatorFontSize = 16;
+
+        private static float ScaleFactor => Mathf.Clamp(Screen.height / RefHeight, 0.25f, 1.5f);
+
+        // Scaled constants
+        public static float CollapsedWidth => BaseCollapsedWidth * ScaleFactor;
+        public static float ResizeHandleHeight => BaseResizeHandleHeight * ScaleFactor;
+        public static int ButtonSize => Mathf.RoundToInt(BaseButtonSize * ScaleFactor);
+        public static int EdgeButtonWidth => Mathf.RoundToInt(BaseEdgeButtonWidth * ScaleFactor);
+        public static int SlideButtonSize => Mathf.RoundToInt(BaseSlideButtonSize * ScaleFactor);
+        public static int ChevronFontSize => Mathf.RoundToInt(BaseChevronFontSize * ScaleFactor);
+        public static int ResizeIndicatorFontSize => Mathf.RoundToInt(BaseResizeIndicatorFontSize * ScaleFactor);
+
         public const float PeekWidthPercent = 0.16f;
         public const float ExpandedWidthPercent = 0.1875f;
         public const float MinPanelHeight = 200f;
@@ -17,10 +37,8 @@ namespace BeefsRecipes
         public const int ExpandedFontSize = 16;
         public const int TitleFontSize = 18;
         public const int TitleMaxChars = 30;
-        public const float ResizeHandleHeight = 20f;
         public const float TextBoxWidthPercent = 0.80f;
         public const float ButtonAreaWidthPercent = 0.20f;
-        public const int ButtonSize = 40;
         public const float TextHideWidthThreshold = 0.05f;
 
         private GameObject _canvasObject;
@@ -117,7 +135,7 @@ namespace BeefsRecipes
             edgeRect.anchorMax = new Vector2(0, 0.5f);
             edgeRect.pivot = new Vector2(0, 0.5f);
             edgeRect.anchoredPosition = Vector2.zero;
-            edgeRect.sizeDelta = new Vector2(30f, Screen.height * 0.05f);
+            edgeRect.sizeDelta = new Vector2(EdgeButtonWidth, Screen.height * 0.05f);
 
             Image edgeImage = _edgeButtonObject.AddComponent<Image>();
             edgeImage.color = new Color(0.1f, 0.1f, 0.1f, 0f);
@@ -147,7 +165,7 @@ namespace BeefsRecipes
 
             _edgeButtonText = chevronObj.AddComponent<Text>();
             _edgeButtonText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            _edgeButtonText.fontSize = 24;
+            _edgeButtonText.fontSize = ChevronFontSize;
             _edgeButtonText.color = Color.white;
             _edgeButtonText.alignment = TextAnchor.MiddleCenter;
             _edgeButtonText.fontStyle = FontStyle.Bold;
@@ -213,7 +231,7 @@ namespace BeefsRecipes
             rt.anchorMax = new Vector2(0, 1);
             rt.pivot     = new Vector2(0, 1);
             rt.anchoredPosition = new Vector2(0f, -ResizeHandleHeight);
-            rt.sizeDelta = new Vector2(30f, 30f);
+            rt.sizeDelta = new Vector2(SlideButtonSize, SlideButtonSize);
 
             var img = _slideButtonObject.AddComponent<Image>();
             img.color = new Color(0.1f, 0.1f, 0.1f, 0f);
@@ -233,7 +251,7 @@ namespace BeefsRecipes
             var t = textObj.AddComponent<Text>();
             t.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             t.text = "↕";
-            t.fontSize = 20;
+            t.fontSize = Mathf.RoundToInt(SlideButtonSize * 0.67f);
             t.alignment = TextAnchor.MiddleCenter;
             t.color = Color.white;
             t.raycastTarget = false;
@@ -256,7 +274,7 @@ namespace BeefsRecipes
             Text indicatorText = indicator.AddComponent<Text>();
             indicatorText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             indicatorText.text = "═";
-            indicatorText.fontSize = 16;
+            indicatorText.fontSize = ResizeIndicatorFontSize;
             indicatorText.color = new Color(1f, 1f, 1f, 0.8f);
             indicatorText.alignment = TextAnchor.MiddleCenter;
             indicatorText.raycastTarget = false;
@@ -270,7 +288,7 @@ namespace BeefsRecipes
             RectTransform scrollViewRect = _scrollViewObject.AddComponent<RectTransform>();
             scrollViewRect.anchorMin = new Vector2(0, 0);
             scrollViewRect.anchorMax = new Vector2(1, 1);
-            scrollViewRect.offsetMin = new Vector2(35, ResizeHandleHeight + 5);
+            scrollViewRect.offsetMin = new Vector2(EdgeButtonWidth + 5, ResizeHandleHeight + 5);
             scrollViewRect.offsetMax = new Vector2(-10, -(ResizeHandleHeight + 5));
 
             Image scrollViewImage = _scrollViewObject.AddComponent<Image>();
@@ -441,7 +459,7 @@ namespace BeefsRecipes
             Text textComponent = textObj.AddComponent<Text>();
             textComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             textComponent.text = text;
-            textComponent.fontSize = size - 8;
+            textComponent.fontSize = Mathf.Max(12, size - 8);
             textComponent.color = Color.white;
             textComponent.alignment = TextAnchor.MiddleCenter;
             textComponent.fontStyle = FontStyle.Bold;
