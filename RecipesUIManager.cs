@@ -98,14 +98,6 @@ namespace BeefsRecipes
             _canvas.sortingOrder = 9999;
 
             _canvasObject.AddComponent<GraphicRaycaster>();
-
-            if (EventSystem.current == null)
-            {
-                GameObject eventSystemObj = new GameObject("BeefsRecipesEventSystem");
-                Object.DontDestroyOnLoad(eventSystemObj);
-                eventSystemObj.AddComponent<EventSystem>();
-                eventSystemObj.AddComponent<StandaloneInputModule>();
-            }
         }
 
         private void CreatePanel()

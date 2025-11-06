@@ -65,6 +65,12 @@ Hover your mouse over the right edge of the screen to reveal the notes panel. No
 
 ## Changelog
 
+>### Version 1.0.2:
+> - Fixed interactions with screens when cursor is locked
+
+>### Version 1.0.1:
+>- Update button scaling. There's more UI elements that can be scaled later on
+
 >### Version 1.0.0
 >- Initial release
 
