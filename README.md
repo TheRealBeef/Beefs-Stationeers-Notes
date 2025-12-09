@@ -77,6 +77,8 @@ Hover your mouse over the right edge of the screen to reveal the notes panel. No
 ## Known Issues
 
 ## Roadmap
+- [ ] Add double-click functionality to cycle states
+- [ ] Add interface button scaling options to mod options (Thanks for feedback PeteWasEre!)
 
 ## Source Code
 
