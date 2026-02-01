@@ -65,7 +65,10 @@ Hover your mouse over the right edge of the screen to reveal the notes panel. No
 
 ## Changelog
 
-
+>### Version 1.0.3:
+> - Single click and double-click actions now more intuitive - double-click to change between edit/pin states and single click to pin it when peeking, no longer need to click the right side window
+> - The sidebar button is now sticking out away from the panel, transparent when panel not hovered over, and size can be configured
+> - Added UI and button scaling options to config options
 
 >### Version 1.0.2:
 > - Fixed interactions with screens when cursor is locked
