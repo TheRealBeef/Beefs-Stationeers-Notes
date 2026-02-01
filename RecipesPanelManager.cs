@@ -21,10 +21,18 @@ namespace BeefsRecipes
 
         private PanelState _currentState = PanelState.Hidden;
         private PanelState _targetState = PanelState.Hidden;
+        private float _lastPanelClickTime = 0f;
+        private const float DoubleClickThreshold = 0.3f;
+
         public bool IsEditing { get; private set; }
         private float _currentWidth = RecipesUIManager.CollapsedWidth;
         private float _currentHeight = 600f;
         private bool _isHoveringPanel = false;
+        private bool _isHoveringEdge = false;
+
+        private bool _hasPendingClick = false;
+        private float _pendingClickTime = 0f;
+        private System.Action _pendingClickAction = null;
 
         private bool _isDraggingResize = false;
         private bool _isDraggingTop = false;
@@ -81,6 +89,7 @@ namespace BeefsRecipes
             HandleResizeDragging();
             HandleSlideDragging();
             HandleMouse();
+            HandlePendingClick();
             UpdateTransitions();
             UpdateAppearance();
         }
@@ -167,7 +176,9 @@ namespace BeefsRecipes
                 }
             }
 
-            bool hoveringRightEdge = Input.mousePosition.x >= Screen.width - 20f;
+            _isHoveringEdge = mouseOverEdge;
+
+            bool hoveringRightEdge = Input.mousePosition.x >= Screen.width - BeefsRecipesPlugin.HoverZoneWidth.Value;
             _isHoveringPanel = mouseOverPanel || mouseOverEdge || mouseOverSlide || hoveringRightEdge;
 
             _uiManager.SetAnyHandleHovered(mouseOverResizeHandle && _currentState == PanelState.Expanded);
@@ -187,8 +198,31 @@ namespace BeefsRecipes
             }
         }
 
+        private void HandlePendingClick()
+        {
+            if (_hasPendingClick && Time.time - _pendingClickTime > DoubleClickThreshold)
+            {
+                _pendingClickAction?.Invoke();
+                _hasPendingClick = false;
+                _pendingClickAction = null;
+            }
+        }
+
         private void HandleClick(bool mouseOverEdge, bool mouseOverPanel, bool mouseOverResizeHandle, bool hoveringRightEdge, List<RaycastResult> results, bool mouseOverSlide)
         {
+            float timeSinceLastClick = Time.time - _lastPanelClickTime;
+            bool isDoubleClick = timeSinceLastClick <= DoubleClickThreshold;
+            _lastPanelClickTime = Time.time;
+
+            if (isDoubleClick && mouseOverPanel && !IsClickingInteractiveElement(results))
+            {
+                _hasPendingClick = false;
+                _pendingClickAction = null;
+
+                ToggleEditMode();
+                return;
+            }
+
             if (mouseOverResizeHandle && _currentState == PanelState.Expanded)
             {
                 _isDraggingResize = true;
@@ -213,8 +247,8 @@ namespace BeefsRecipes
                 return;
             }
 
-            bool clickingRightEdge = Input.mousePosition.x >= Screen.width - 20f;
-            if (clickingRightEdge && (_currentState == PanelState.Hidden || _currentState == PanelState.Peeking))
+            bool clickingRightEdge = Input.mousePosition.x >= Screen.width - BeefsRecipesPlugin.HoverZoneWidth.Value;
+            if (clickingRightEdge && !mouseOverEdge)
             {
                 if (_currentState == PanelState.Hidden)
                 {
@@ -224,14 +258,26 @@ namespace BeefsRecipes
                 {
                     SetTargetState(PanelState.PeekLocked);
                 }
+                else if (_currentState == PanelState.PeekLocked)
+                {
+                    SetTargetState(PanelState.Hidden);
+                }
+                return;
+            }
+
+            if (mouseOverPanel && _currentState == PanelState.Peeking)
+            {
+                SetTargetState(PanelState.PeekLocked);
                 return;
             }
 
             if (mouseOverPanel && _currentState == PanelState.PeekLocked)
             {
-                if (!IsClickingCheckbox(Input.mousePosition, results))
+                if (!IsClickingCheckbox(Input.mousePosition, results) && !IsClickingInteractiveElement(results))
                 {
-                    SetTargetState(PanelState.Hidden);
+                    _hasPendingClick = true;
+                    _pendingClickTime = Time.time;
+                    _pendingClickAction = () => SetTargetState(PanelState.Hidden);
                 }
                 return;
             }
@@ -239,9 +285,43 @@ namespace BeefsRecipes
             if (mouseOverSlide && _currentState == PanelState.Expanded && IsEditing)
             {
                 _isDraggingSlide = true;
-                _slideDragStartMouseY  = ((Vector2)Input.mousePosition).y;
+                _slideDragStartMouseY = ((Vector2)Input.mousePosition).y;
                 _slideDragStartOffsetY = _targetYOffset;
                 return;
+            }
+        }
+
+        private bool IsClickingInteractiveElement(List<RaycastResult> results)
+        {
+            foreach (var result in results)
+            {
+                if (result.gameObject.GetComponent<InputField>() != null)
+                    return true;
+
+                var button = result.gameObject.GetComponent<Button>();
+                if (button != null && result.gameObject != _uiManager.PanelObject)
+                    return true;
+
+                if (result.gameObject.name == "DisplayText")
+                {
+                    if (_contentManager != null && _contentManager.IsCheckboxHere(result.gameObject, Input.mousePosition))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        private void ToggleEditMode()
+        {
+            if (_currentState == PanelState.Expanded)
+            {
+                SetEditingMode(false);
+                SetTargetState(PanelState.PeekLocked);
+            }
+            else
+            {
+                SetTargetState(PanelState.Expanded);
+                SetEditingMode(true);
             }
         }
 
@@ -277,7 +357,7 @@ namespace BeefsRecipes
             bool isEditing     = IsEditing;
             bool shouldShow    = _isHoveringPanel && _currentState != PanelState.Hidden;
 
-            _uiManager.UpdateChevronAndHandleVisibility(shouldShow, isExpanded, isPeekLocked, isEditing);
+            _uiManager.UpdateChevronAndHandleVisibility(shouldShow, isExpanded, isPeekLocked, isEditing, _isHoveringEdge);
 
             if (!isExpanded)
             {

@@ -4,6 +4,6 @@ namespace BeefsRecipes
     {
         public const string PLUGIN_GUID = "BeefsRecipes";
         public const string PLUGIN_NAME = "Beef's Recipes";
-        public const string PLUGIN_VERSION = "1.0.2";
+        public const string PLUGIN_VERSION = "1.0.3";
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using Assets.Scripts.Objects;
 using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using UnityEngine;
@@ -34,6 +35,11 @@ namespace BeefsRecipes
         private bool _wasInWorld = false;
         public bool isWorldLoaded = false;
 
+        public static ConfigEntry<float> UIScaleMultiplier;
+        public static ConfigEntry<float> EdgeBarWidthMultiplier;
+        public static ConfigEntry<float> EdgeBarHeightMultiplier;
+        public static ConfigEntry<float> HoverZoneWidth;
+
         public bool IsEditing => _panelManager?.IsEditing ?? false;
 
         private void Awake()
@@ -41,6 +47,21 @@ namespace BeefsRecipes
             Instance = this;
             Log = Logger;
 
+            UIScaleMultiplier = Config.Bind("UI", "UIScaleMultiplier", 1.0f,
+                new ConfigDescription("Global multiplier for all UI elements (fonts, buttons, panel widths)",
+                    new AcceptableValueRange<float>(0.5f, 3.0f)));
+
+            EdgeBarWidthMultiplier = Config.Bind("UI", "EdgeBarWidthMultiplier", 1.0f,
+                new ConfigDescription("Additional multiplier for edge bar width only (makes it easier to click)",
+                    new AcceptableValueRange<float>(1.0f, 5.0f)));
+
+            EdgeBarHeightMultiplier = Config.Bind("UI", "EdgeBarHeightMultiplier", 1.0f,
+                new ConfigDescription("Multiplier for edge bar height (makes it easier to click)",
+                    new AcceptableValueRange<float>(0.5f, 5.0f)));
+
+            HoverZoneWidth = Config.Bind("UI", "HoverZoneWidth", 20f,
+                new ConfigDescription("Width in pixels of the hover detection zone on the right edge of the screen",
+                    new AcceptableValueRange<float>(10f, 100f)));
             ApplyPatches();
         }
 
@@ -63,6 +84,7 @@ namespace BeefsRecipes
             if (_uiManager.Canvas != null)
                 _uiManager.Canvas.enabled = true;
 
+            _uiManager.UpdateSizes();
             _panelManager.Update();
             _contentManager.Update();
         }

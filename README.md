@@ -65,6 +65,8 @@ Hover your mouse over the right edge of the screen to reveal the notes panel. No
 
 ## Changelog
 
+
+
 >### Version 1.0.2:
 > - Fixed interactions with screens when cursor is locked
 

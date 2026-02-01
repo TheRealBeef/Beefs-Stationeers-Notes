@@ -17,25 +17,31 @@ namespace BeefsRecipes
         private const int BaseChevronFontSize = 24;
         private const int BaseResizeIndicatorFontSize = 16;
 
-        private static float ScaleFactor => Mathf.Clamp(Screen.height / RefHeight, 0.25f, 1.5f);
+        private static float ScreenScaleFactor => Mathf.Clamp(Screen.height / RefHeight, 0.25f, 1.5f);
+        public static float ScaleFactor => ScreenScaleFactor * BeefsRecipesPlugin.UIScaleMultiplier.Value;
 
         // Scaled constants
         public static float CollapsedWidth => BaseCollapsedWidth * ScaleFactor;
         public static float ResizeHandleHeight => BaseResizeHandleHeight * ScaleFactor;
         public static int ButtonSize => Mathf.RoundToInt(BaseButtonSize * ScaleFactor);
-        public static int EdgeButtonWidth => Mathf.RoundToInt(BaseEdgeButtonWidth * ScaleFactor);
+        public static int EdgeButtonWidth => Mathf.RoundToInt(BaseEdgeButtonWidth * ScaleFactor * BeefsRecipesPlugin.EdgeBarWidthMultiplier.Value);
         public static int SlideButtonSize => Mathf.RoundToInt(BaseSlideButtonSize * ScaleFactor);
         public static int ChevronFontSize => Mathf.RoundToInt(BaseChevronFontSize * ScaleFactor);
         public static int ResizeIndicatorFontSize => Mathf.RoundToInt(BaseResizeIndicatorFontSize * ScaleFactor);
 
-        public const float PeekWidthPercent = 0.16f;
-        public const float ExpandedWidthPercent = 0.1875f;
+        private const float BasePeekWidthPercent = 0.16f;
+        private const float BaseExpandedWidthPercent = 0.1875f;
+        public static float PeekWidthPercent => BasePeekWidthPercent * BeefsRecipesPlugin.UIScaleMultiplier.Value;
+        public static float ExpandedWidthPercent => BaseExpandedWidthPercent * BeefsRecipesPlugin.UIScaleMultiplier.Value;
         public const float MinPanelHeight = 200f;
         public const float MaxPanelHeightPercent = 0.95f;
         public const float TransitionSpeed = 8f;
-        public const int PeekFontSize = 12;
-        public const int ExpandedFontSize = 16;
-        public const int TitleFontSize = 18;
+        private const int BasePeekFontSize = 12;
+        private const int BaseExpandedFontSize = 16;
+        private const int BaseTitleFontSize = 18;
+        public static int PeekFontSize => Mathf.RoundToInt(BasePeekFontSize * BeefsRecipesPlugin.UIScaleMultiplier.Value);
+        public static int ExpandedFontSize => Mathf.RoundToInt(BaseExpandedFontSize * BeefsRecipesPlugin.UIScaleMultiplier.Value);
+        public static int TitleFontSize => Mathf.RoundToInt(BaseTitleFontSize * BeefsRecipesPlugin.UIScaleMultiplier.Value);
         public const int TitleMaxChars = 30;
         public const float TextBoxWidthPercent = 0.80f;
         public const float ButtonAreaWidthPercent = 0.20f;
@@ -61,6 +67,8 @@ namespace BeefsRecipes
         private bool _lastAnyHandleHovered;
         private GameObject _slideButtonObject;
         private Button _slideButton;
+        private Sprite _edgeButtonSprite;
+
         public GameObject SlideButtonObject => _slideButtonObject;
         public Button SlideButton => _slideButton;
 
@@ -85,6 +93,7 @@ namespace BeefsRecipes
             CreateResizeHandles();
             CreateScrollView();
 
+            _edgeButtonObject.transform.SetAsLastSibling();
             _canvas.enabled = false;
         }
 
@@ -125,13 +134,18 @@ namespace BeefsRecipes
             RectTransform edgeRect = _edgeButtonObject.AddComponent<RectTransform>();
             edgeRect.anchorMin = new Vector2(0, 0.5f);
             edgeRect.anchorMax = new Vector2(0, 0.5f);
-            edgeRect.pivot = new Vector2(0, 0.5f);
+            edgeRect.pivot = new Vector2(1, 0.5f);
             edgeRect.anchoredPosition = Vector2.zero;
-            edgeRect.sizeDelta = new Vector2(EdgeButtonWidth, Screen.height * 0.05f);
+            edgeRect.sizeDelta = new Vector2(EdgeButtonWidth, Screen.height * 0.05f * BeefsRecipesPlugin.EdgeBarHeightMultiplier.Value);
 
             Image edgeImage = _edgeButtonObject.AddComponent<Image>();
             edgeImage.color = new Color(0.1f, 0.1f, 0.1f, 0f);
             edgeImage.raycastTarget = true;
+
+            int cornerRadius = Mathf.RoundToInt(14 * ScaleFactor);
+            _edgeButtonSprite = CreateEdgeSprite(cornerRadius);
+            edgeImage.sprite = _edgeButtonSprite;
+            edgeImage.type = Image.Type.Sliced;
 
             _edgeButton = _edgeButtonObject.AddComponent<Button>();
             _edgeButton.targetGraphic = edgeImage;
@@ -280,7 +294,7 @@ namespace BeefsRecipes
             RectTransform scrollViewRect = _scrollViewObject.AddComponent<RectTransform>();
             scrollViewRect.anchorMin = new Vector2(0, 0);
             scrollViewRect.anchorMax = new Vector2(1, 1);
-            scrollViewRect.offsetMin = new Vector2(EdgeButtonWidth + 5, ResizeHandleHeight + 5);
+            scrollViewRect.offsetMin = new Vector2(15, ResizeHandleHeight + 5);
             scrollViewRect.offsetMax = new Vector2(-10, -(ResizeHandleHeight + 5));
 
             Image scrollViewImage = _scrollViewObject.AddComponent<Image>();
@@ -460,7 +474,7 @@ namespace BeefsRecipes
             return button;
         }
 
-        public void UpdateChevronAndHandleVisibility(bool isHovering, bool isExpanded, bool isPeekLocked, bool isEditing)
+        public void UpdateChevronAndHandleVisibility(bool isHoveringPanel, bool isExpanded, bool isPeekLocked, bool isEditing, bool isHoveringEdge)
         {
             if (_edgeButtonText == null) return;
 
@@ -473,13 +487,17 @@ namespace BeefsRecipes
             const float buttonIdleAlphaEdit    = 0.55f;
             float buttonIdleA = isEditing ? buttonIdleAlphaEdit : buttonIdleAlphaDefault;
 
-            bool chevronVisible = isExpanded || isPeekLocked || isHovering;
+            bool chevronVisible = isExpanded || isPeekLocked || isHoveringPanel;
             _edgeButtonText.gameObject.SetActive(chevronVisible);
             _edgeButtonText.text = isExpanded ? "▶" : "◀";
 
-            float chevronTargetA =
-                (isExpanded || isPeekLocked) ? (isHovering ? hoverAlpha : chevronIdleAlpha)
-                    : (isHovering ? chevronIdleAlpha : 0f);
+            float chevronTargetA;
+            if (isHoveringEdge)
+                chevronTargetA = hoverAlpha;
+            else if (isHoveringPanel)
+                chevronTargetA = chevronIdleAlpha;
+            else
+                chevronTargetA = 0f;
 
             var curChevron = _edgeButtonText.color;
             float chevronNewA = Mathf.MoveTowards(curChevron.a, chevronTargetA, Time.deltaTime * TransitionSpeed);
@@ -488,9 +506,13 @@ namespace BeefsRecipes
             var edgeImage = _edgeButtonObject.GetComponent<Image>();
             if (edgeImage != null)
             {
-                float bgTargetA =
-                    (isExpanded || isPeekLocked) ? (isHovering ? hoverAlpha : buttonIdleA)
-                        : (isHovering ? buttonIdleA : 0f);
+                float bgTargetA;
+                if (isHoveringEdge)
+                    bgTargetA = hoverAlpha;
+                else if (isHoveringPanel)
+                    bgTargetA = buttonIdleA;
+                else
+                    bgTargetA = 0f;
 
                 float newA = Mathf.MoveTowards(edgeImage.color.a, bgTargetA, Time.deltaTime * TransitionSpeed);
                 edgeImage.color = new Color(orange.r, orange.g, orange.b, newA);
@@ -498,7 +520,7 @@ namespace BeefsRecipes
             }
 
             if (_slideButtonObject != null)
-                _slideButtonObject.SetActive(isEditing && (isExpanded || isPeekLocked || isHovering));
+                _slideButtonObject.SetActive(isEditing && (isExpanded || isPeekLocked || isHoveringPanel ));
 
             UpdateHandleFade(_topResizeHandle,    isExpanded, _anyHandleHovered, isEditing);
             UpdateHandleFade(_bottomResizeHandle, isExpanded, _anyHandleHovered, isEditing);
@@ -578,6 +600,114 @@ namespace BeefsRecipes
             Color currentColor = _backgroundImage.color;
             currentColor.a = Mathf.Lerp(currentColor.a, targetAlpha, Time.deltaTime * TransitionSpeed);
             _backgroundImage.color = currentColor;
+        }
+
+        public void UpdateSizes()
+        {
+            if (_edgeButtonObject != null)
+            {
+                var rect = _edgeButtonObject.GetComponent<RectTransform>();
+                rect.sizeDelta = new Vector2(EdgeButtonWidth, Screen.height * 0.05f * BeefsRecipesPlugin.EdgeBarHeightMultiplier.Value);
+
+                var edgeImage = _edgeButtonObject.GetComponent<Image>();
+                if (edgeImage != null)
+                {
+                    int cornerRadius = Mathf.RoundToInt(14 * ScaleFactor);
+                    if (_edgeButtonSprite != null)
+                    {
+                        Object.Destroy(_edgeButtonSprite.texture);
+                        Object.Destroy(_edgeButtonSprite);
+                    }
+                    _edgeButtonSprite = CreateEdgeSprite(cornerRadius);
+                    edgeImage.sprite = _edgeButtonSprite;
+                    edgeImage.type = Image.Type.Sliced;
+                }
+            }
+
+            if (_edgeButtonText != null)
+            {
+                _edgeButtonText.fontSize = ChevronFontSize;
+            }
+
+            if (_topResizeHandle != null)
+            {
+                var rect = _topResizeHandle.GetComponent<RectTransform>();
+                rect.sizeDelta = new Vector2(0, ResizeHandleHeight);
+
+                var indicator = _topResizeHandle.transform.Find("Indicator")?.GetComponent<Text>();
+                if (indicator != null)
+                {
+                    indicator.fontSize = ResizeIndicatorFontSize;
+                }
+            }
+
+            if (_bottomResizeHandle != null)
+            {
+                var rect = _bottomResizeHandle.GetComponent<RectTransform>();
+                rect.sizeDelta = new Vector2(0, ResizeHandleHeight);
+
+                var indicator = _bottomResizeHandle.transform.Find("Indicator")?.GetComponent<Text>();
+                if (indicator != null)
+                {
+                    indicator.fontSize = ResizeIndicatorFontSize;
+                }
+            }
+
+            if (_slideButtonObject != null)
+            {
+                var rect = _slideButtonObject.GetComponent<RectTransform>();
+                rect.anchoredPosition = new Vector2(0f, -ResizeHandleHeight);
+                rect.sizeDelta = new Vector2(SlideButtonSize, SlideButtonSize);
+
+                var icon = _slideButtonObject.transform.Find("Icon")?.GetComponent<Text>();
+                if (icon != null)
+                {
+                    icon.fontSize = Mathf.RoundToInt(SlideButtonSize * 0.67f);
+                }
+            }
+        }
+
+        private Sprite CreateEdgeSprite(int cornerRadius)
+        {
+            int size = cornerRadius * 2 + 2;
+            Texture2D texture = new Texture2D(size, size);
+            texture.filterMode = FilterMode.Bilinear;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    bool isInside = true;
+
+                    if (x < cornerRadius && y < cornerRadius)
+                    {
+                        float dist = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(cornerRadius, cornerRadius));
+                        isInside = dist <= cornerRadius;
+                    }
+
+                    else if (x < cornerRadius && y >= size - cornerRadius)
+                    {
+                        float dist = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(cornerRadius, size - cornerRadius));
+                        isInside = dist <= cornerRadius;
+                    }
+
+                    texture.SetPixel(x, y, isInside ? Color.white : Color.clear);
+                }
+            }
+
+            texture.Apply();
+
+            Sprite sprite = Sprite.Create(
+                texture,
+                new Rect(0, 0, size, size),
+                new Vector2(0.5f, 0.5f),
+                100f,
+                0,
+                SpriteMeshType.FullRect,
+                new Vector4(cornerRadius, cornerRadius, 1, cornerRadius)
+            );
+
+            return sprite;
         }
     }
 }
