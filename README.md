@@ -1,7 +1,7 @@
 # Beef's Recipes
 
 <p align="center" width="100%">
-<img alt="Beef's Notes Logo" src="./About/thumb.png" width="45%" />
+<img alt="Beef's Notes Logo" src="./About/Thumb.png" width="45%" />
 </p>
 
 Note-taking panel for keeping track of recipes, tasks, and reminders in-game
@@ -64,6 +64,16 @@ See: [https://github.com/StationeersLaunchPad/StationeersLaunchPad](https://gith
 Hover your mouse over the right edge of the screen to reveal the notes panel. Notes automatically save when you save your game.
 
 ## Changelog
+>### Version 1.1.0
+>- Multiplayer (dedicated/non-dedicated) support
+>- Drawing canvas with brush, eraser, and undo
+>- Fullscreen mode for notes
+>- Basic moderation tools for multiplayer - vote-to-remove shared notes, strike tracking, and auto kick/ban
+>- Drag across the divider to share/unshare notes
+>- Right-click context menus
+>- In-game user guide with screenshots
+>- Settings panel with sliders for font size, UI scale, edge bar etc
+>- Personal notes in multiplayer are saved locally only
 
 >### Version 1.0.3:
 > - Single click and double-click actions now more intuitive - double-click to change between edit/pin states and single click to pin it when peeking, no longer need to click the right side window
