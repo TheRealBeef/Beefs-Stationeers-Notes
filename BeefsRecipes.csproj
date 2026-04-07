@@ -3,7 +3,7 @@
         <TargetFramework>netstandard2.1</TargetFramework>
         <AssemblyTitle>BeefsRecipes</AssemblyTitle>
         <Product>BeefsRecipes</Product>
-        <Version>1.0.3</Version>
+        <Version>1.1.0</Version>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>latest</LangVersion>
         <RootNamespace>BeefsRecipes</RootNamespace>
@@ -14,6 +14,7 @@
         <GameDir>C:\Program Files (x86)\Steam\steamapps\common\Stationeers</GameDir>
         <BepInExDir>$(GameDir)\BepInEx</BepInExDir>
         <WorkshopDir>$(USERPROFILE)\Documents\My Games\Stationeers\mods\BeefsRecipes</WorkshopDir>
+        <LaunchPadDir>$(BepInExDir)\plugins\StationeersLaunchPad</LaunchPadDir>
     </PropertyGroup>
 
     <ItemGroup>
@@ -65,12 +66,20 @@
             <HintPath>$(GameDir)\rocketstation_Data\Managed\UnityEngine.UIModule.dll</HintPath>
             <Private>False</Private>
         </Reference>
+        <Reference Include="UnityEngine.ImageConversionModule">
+            <HintPath>$(GameDir)\rocketstation_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
         <Reference Include="UniTask">
             <HintPath>$(GameDir)\rocketstation_Data\Managed\UniTask.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Newtonsoft.Json">
             <HintPath>$(GameDir)\rocketstation_Data\Managed\Newtonsoft.Json.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="LaunchPadBooster">
+            <HintPath>$(LaunchPadDir)\LaunchPadBooster.dll</HintPath>
             <Private>False</Private>
         </Reference>
     </ItemGroup>
@@ -85,15 +94,23 @@
         <None Update="About\thumb.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <None Include="Content\guide\**" Condition="Exists('Content\guide')">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
         <MakeDir Directories="$(WorkshopDir)" />
         <MakeDir Directories="$(WorkshopDir)\About" />
         <MakeDir Directories="$(WorkshopDir)\Content" />
+        <MakeDir Directories="$(WorkshopDir)\Content\guide" />
         <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(WorkshopDir)" />
         <Copy SourceFiles="About\about.xml" DestinationFiles="$(WorkshopDir)\About\about.xml" />
         <Copy SourceFiles="About\thumb.png" DestinationFiles="$(WorkshopDir)\About\thumb.png" />
         <Copy SourceFiles="About\Preview.png" DestinationFiles="$(WorkshopDir)\About\Preview.png" />
+        <ItemGroup>
+            <GuideImages Include="Content\guide\*.png" />
+        </ItemGroup>
+        <Copy SourceFiles="@(GuideImages)" DestinationFolder="$(WorkshopDir)\Content\guide" Condition="'@(GuideImages)' != ''" />
     </Target>
 </Project>

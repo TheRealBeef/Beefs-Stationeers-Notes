@@ -18,6 +18,9 @@ namespace BeefsRecipes
             public int Length;
         }
 
+        private const char EscapedLT = '\uFF1C';
+        private const char EscapedGT = '\uFF1E';
+
         public static string MarkdownToUGUI(string markdown, out List<CheckboxInfo> checkboxes, int fontSizeOffset = 0)
         {
             checkboxes = new List<CheckboxInfo>();
@@ -26,14 +29,39 @@ namespace BeefsRecipes
                 return markdown;
 
             string result = markdown;
-            int lineNumber = 0;
 
-            var lines = result.Split(new[] { "\n", "\r\n" }, StringSplitOptions.None);
+            var codeBlocks = new List<string>();
+            result = Regex.Replace(result, @"```([\s\S]*?)```", m =>
+            {
+                int idx = codeBlocks.Count;
+                codeBlocks.Add(m.Groups[1].Value);
+                return $"\x00CODEBLOCK{idx}\x00";
+            });
+
+            var inlineCodes = new List<string>();
+            result = Regex.Replace(result, @"`([^`\n]+?)`", m =>
+            {
+                int idx = inlineCodes.Count;
+                inlineCodes.Add(m.Groups[1].Value);
+                return $"\x00INLINE{idx}\x00";
+            });
+
+            result = result.Replace('<', EscapedLT).Replace('>', EscapedGT);
+
+            var lines = result.Split(new[] { "\n" }, StringSplitOptions.None);
             var processedLines = new List<string>();
+            int lineNumber = 0;
 
             foreach (var line in lines)
             {
                 string processedLine = line;
+
+                if (Regex.IsMatch(processedLine, @"^\s*(---+|\*\*\*+|___+)\s*$"))
+                {
+                    processedLines.Add("\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500");
+                    lineNumber++;
+                    continue;
+                }
 
                 var checkboxMatch = Regex.Match(processedLine, @"^(\s*)-\s+\[([ xX])\]\s+(.+)$");
                 if (checkboxMatch.Success)
@@ -51,12 +79,12 @@ namespace BeefsRecipes
                         Length = checkboxMatch.Value.Length
                     });
 
-                    string checkmark = isChecked ? "☑" : "☐";
+                    string checkmark = isChecked ? "\u2611" : "\u2610";
                     processedLine = $"{indent}{checkmark} {text}";
                 }
                 else if (Regex.IsMatch(processedLine, @"^(\s*)([-*])\s+(.+)$"))
                 {
-                    processedLine = Regex.Replace(processedLine, @"^(\s*)([-*])\s+(.+)$", "$1• $3");
+                    processedLine = Regex.Replace(processedLine, @"^(\s*)([-*])\s+(.+)$", "$1\u2022 $3");
                 }
                 else if (Regex.IsMatch(processedLine, @"^(\s*)(\d+)\.\s+(.+)$"))
                 {
@@ -76,9 +104,7 @@ namespace BeefsRecipes
             result = Regex.Replace(result, @"^##\s+(.+)$", $"<size={22 + fontSizeOffset}><b>$1</b></size>", RegexOptions.Multiline);
             result = Regex.Replace(result, @"^#\s+(.+)$", $"<size={24 + fontSizeOffset}><b>$1</b></size>", RegexOptions.Multiline);
 
-            result = Regex.Replace(result, @"```([^`]+)```",
-                m => "<color=#00ff00><b>" + m.Groups[1].Value.Replace("<", "&lt;").Replace(">", "&gt;") + "</b></color>",
-                RegexOptions.Singleline);
+            result = Regex.Replace(result, $@"^{EscapedGT}\s+(.+)$", "<i><color=#888888>\u275D $1</color></i>", RegexOptions.Multiline);
 
             result = Regex.Replace(result, @"==(.+?)==", "<color=#ffff00><b>$1</b></color>");
 
@@ -91,11 +117,23 @@ namespace BeefsRecipes
             result = Regex.Replace(result, @"(?<!\w)\*(.+?)\*(?!\w)", "<i>$1</i>");
             result = Regex.Replace(result, @"(?<!\w)_(.+?)_(?!\w)", "<i>$1</i>");
 
-            result = Regex.Replace(result, @"`(.+?)`", "<color=#00ff00>$1</color>");
+            for (int i = 0; i < codeBlocks.Count; i++)
+            {
+                string escaped = codeBlocks[i]
+                    .Replace("<", EscapedLT.ToString())
+                    .Replace(">", EscapedGT.ToString());
+                result = result.Replace($"\x00CODEBLOCK{i}\x00",
+                    "<color=#00ff00><b>" + escaped + "</b></color>");
+            }
 
-            result = Regex.Replace(result, @"^(---+|\*\*\*+)$", "─────────────────────", RegexOptions.Multiline);
-
-            result = Regex.Replace(result, @"^>\s+(.+)$", "<i><color=#888888>❝ $1</color></i>", RegexOptions.Multiline);
+            for (int i = 0; i < inlineCodes.Count; i++)
+            {
+                string escaped = inlineCodes[i]
+                    .Replace("<", EscapedLT.ToString())
+                    .Replace(">", EscapedGT.ToString());
+                result = result.Replace($"\x00INLINE{i}\x00",
+                    "<color=#00ff00>" + escaped + "</color>");
+            }
 
             return result;
         }

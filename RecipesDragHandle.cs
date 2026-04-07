@@ -50,14 +50,14 @@ namespace BeefsRecipes
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            float timeSinceLastClick = Time.time - _lastClickTime;
+            float timeSinceLastClick = Time.unscaledTime - _lastClickTime;
 
             if (timeSinceLastClick <= DoubleClickThreshold)
             {
                 OnDoubleClick?.Invoke(itemId);
             }
 
-            _lastClickTime = Time.time;
+            _lastClickTime = Time.unscaledTime;
         }
 
         public void SetCollapsed(bool collapsed)
@@ -103,8 +103,8 @@ namespace BeefsRecipes
             dragHandleRect.anchorMin = new Vector2(0, 0);
             dragHandleRect.anchorMax = new Vector2(0, 1);
             dragHandleRect.pivot = new Vector2(1, 0.5f);
-            dragHandleRect.anchoredPosition = new Vector2(-5, 0);
-            dragHandleRect.sizeDelta = new Vector2(5, 0);
+            dragHandleRect.anchoredPosition = new Vector2(-BeefsRecipesPlugin.DragBarWidth.Value, 0);
+            dragHandleRect.sizeDelta = new Vector2(BeefsRecipesPlugin.DragBarWidth.Value, 0);
 
             LayoutElement layoutIgnore = dragHandleObj.AddComponent<LayoutElement>();
             layoutIgnore.ignoreLayout = true;

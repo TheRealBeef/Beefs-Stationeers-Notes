@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using Assets.Scripts;
 using Assets.Scripts.Serialization;
 using HarmonyLib;
 using Assets.Scripts.UI;
@@ -13,9 +14,6 @@ namespace BeefsRecipes
     public static class BeefsRecipesPatch
     {
         private static string _loadedSaveFilePath = null;
-        private static string _pendingSaveDirectory = null;
-        private static string _pendingSaveFileName = null;
-        private static FileInfo _fileToDelete = null;
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(InputWindowBase), "get_IsInputWindow")]
@@ -114,24 +112,44 @@ namespace BeefsRecipes
             }
         }
 
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(GameManager), nameof(GameManager.StartGame))]
+        static void StartGame_Postfix()
+        {
+            if (BeefsRecipesPlugin.Instance == null) return;
+
+            try
+            {
+                string worldName = XmlSaveLoad.Instance?.CurrentStationName ?? "";
+                if (string.IsNullOrEmpty(worldName))
+                {
+                    worldName = WorldManager.CurrentWorldName;
+                }
+
+                BeefsRecipesPlugin.Log.LogInfo(
+                    $"StartGame_Postfix - triggering OnSaveLoaded({worldName})");
+                BeefsRecipesPlugin.Instance.OnSaveLoaded(worldName, "");
+            }
+            catch (Exception ex)
+            {
+                BeefsRecipesPlugin.Log.LogError($"Error in StartGame_Postfix: {ex.Message}");
+            }
+        }
+
         [HarmonyPrefix]
         [HarmonyPatch(typeof(SaveHelper), "Save",
             new Type[] { typeof(DirectoryInfo), typeof(string), typeof(bool), typeof(System.Threading.CancellationToken) })]
-        static void Save_Prefix(DirectoryInfo saveDirectory, string saveFileName)
+        static void Save_Prefix(DirectoryInfo saveDirectory, string saveFileName, out string __state)
         {
-            _pendingSaveDirectory = saveDirectory?.FullName;
-            _pendingSaveFileName = saveFileName;
+            __state = saveFileName;
         }
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(SaveHelper), "Save",
             new Type[] { typeof(DirectoryInfo), typeof(string), typeof(bool), typeof(System.Threading.CancellationToken) })]
-        static void Save_Postfix(ref UniTask<SaveResult> __result)
+        static void Save_Postfix(ref UniTask<SaveResult> __result, string __state)
         {
-            string savedFileName = _pendingSaveFileName;
-
-            _pendingSaveDirectory = null;
-            _pendingSaveFileName = null;
+            string savedFileName = __state;
 
             if (string.IsNullOrEmpty(savedFileName))
             {
@@ -201,9 +219,9 @@ namespace BeefsRecipes
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(SaveHelper), "RollSaveFiles")]
-        static void RollSaveFiles_Prefix(DirectoryInfo directoryInfo, int maxCount)
+        static void RollSaveFiles_Prefix(DirectoryInfo directoryInfo, int maxCount, out FileInfo __state)
         {
-            _fileToDelete = null;
+            __state = null;
 
             try
             {
@@ -237,35 +255,90 @@ namespace BeefsRecipes
                 if (files.Count > 0)
                 {
                     files.Sort((a, b) => a.Item2.CompareTo(b.Item2));
-                    _fileToDelete = files[0].Item1;
+                    __state = files[0].Item1;
                 }
             }
             catch (Exception ex)
             {
                 BeefsRecipesPlugin.Log.LogError($"Error in RollSaveFiles_Prefix: {ex.Message}");
-                _fileToDelete = null;
+                __state = null;
             }
         }
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(SaveHelper), "RollSaveFiles")]
-        static void RollSaveFiles_Postfix()
+        static void RollSaveFiles_Postfix(FileInfo __state)
         {
             if (BeefsRecipesPlugin.Instance == null) return;
-            if (_fileToDelete == null) return;
+            if (__state == null) return;
 
             try
             {
-                string deletedFileName = Path.GetFileNameWithoutExtension(_fileToDelete.Name);
+                string deletedFileName = Path.GetFileNameWithoutExtension(__state.Name);
                 BeefsRecipesPlugin.Instance.OnSaveDeleted(deletedFileName);
             }
             catch (Exception ex)
             {
                 BeefsRecipesPlugin.Log.LogError($"Error in RollSaveFiles_Postfix: {ex.Message}");
             }
-            finally
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(Assets.Scripts.NetworkServer), nameof(Assets.Scripts.NetworkServer.ClientDisconnected))]
+        static void ClientDisconnected_Prefix(long connectionId, out ulong __state)
+        {
+            __state = 0;
+
+            try
             {
-                _fileToDelete = null;
+                Client client = Client.Find(connectionId);
+                if (client != null)
+                {
+                    __state = client.ClientId;
+                }
+            }
+            catch (Exception ex)
+            {
+                BeefsRecipesPlugin.Log.LogError($"Error in ClientDisconnected_Prefix: {ex.Message}");
+            }
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(Assets.Scripts.NetworkServer), nameof(Assets.Scripts.NetworkServer.ClientDisconnected))]
+        static void ClientDisconnected_Postfix(ulong __state)
+        {
+            if (__state == 0) return;
+            if (BeefsRecipesPlugin.Instance?.ServerNoteManager == null) return;
+
+            try
+            {
+                BeefsRecipesPlugin.Instance.ServerNoteManager
+                    .OnClientDisconnected(__state);
+            }
+            catch (Exception ex)
+            {
+                BeefsRecipesPlugin.Log.LogError($"Error in ClientDisconnected_Postfix: {ex.Message}");
+            }
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(Assets.Scripts.Objects.Entities.Human), "OnSuitOccupantChanged")]
+        static void OnSuitOccupantChanged_Postfix(Assets.Scripts.Objects.Entities.Human __instance)
+        {
+            if (__instance == null) return;
+            if (BeefsRecipesPlugin.Instance?.ContentManager == null) return;
+
+            try
+            {
+                if (__instance == Assets.Scripts.Objects.Entities.Human.LocalHuman)
+                {
+                    BeefsRecipesPlugin.Instance.ContentManager.RefreshAccentColors();
+                    BeefsRecipesPlugin.Instance.ClientSyncManager?.AnnounceColor();
+                }
+            }
+            catch (Exception ex)
+            {
+                BeefsRecipesPlugin.Log.LogError($"Error in OnSuitOccupantChanged_Postfix: {ex.Message}");
             }
         }
     }
