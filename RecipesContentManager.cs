@@ -270,6 +270,7 @@ namespace BeefsRecipes
                 {
                     _personalSections.Insert(0, CreateWelcomeSection());
                     BeefsRecipesPlugin.WelcomeNoteShown.Value = true;
+                    _panelManager.SetTargetState(RecipesPanelManager.PanelState.PeekLocked);
                     SaveNotes(_currentWorldName, _currentSaveId);
                 }
 
@@ -338,6 +339,7 @@ namespace BeefsRecipes
                 {
                     _personalSections.Insert(0, CreateWelcomeSection());
                     BeefsRecipesPlugin.WelcomeNoteShown.Value = true;
+                    _panelManager.SetTargetState(RecipesPanelManager.PanelState.PeekLocked);
                     SavePersonalNotes();
                 }
 

@@ -117,6 +117,7 @@ namespace BeefsRecipes
         static void StartGame_Postfix()
         {
             if (BeefsRecipesPlugin.Instance == null) return;
+            if (BeefsRecipesPlugin.Instance.isWorldLoaded) return;
 
             try
             {
