@@ -33,11 +33,11 @@ namespace BeefsRecipes
             }
         }
 
-        private static float MenuWidth => 180f * RecipesUIManager.ScaleFactor;
-        private static float ItemHeight => 28f * RecipesUIManager.ScaleFactor;
-        private static float SeparatorHeight => 9f * RecipesUIManager.ScaleFactor;
-        private static float Padding => 4f * RecipesUIManager.ScaleFactor;
-        private static int FontSize => Mathf.RoundToInt(13 * RecipesUIManager.ScaleFactor);
+        private static float MenuWidth => 180f * BeefsRecipesPlugin.UIScaleMultiplier.Value;
+        private static float ItemHeight => 28f * BeefsRecipesPlugin.UIScaleMultiplier.Value;
+        private static float SeparatorHeight => 9f * BeefsRecipesPlugin.UIScaleMultiplier.Value;
+        private static float Padding => 4f * BeefsRecipesPlugin.UIScaleMultiplier.Value;
+        private static int FontSize => Mathf.RoundToInt(13 * BeefsRecipesPlugin.UIScaleMultiplier.Value);
 
         public static bool IsOpen => _instance != null;
 

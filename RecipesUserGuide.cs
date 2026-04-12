@@ -262,31 +262,31 @@ namespace BeefsRecipes
             AddSectionBanner(content, "GETTING STARTED", new Color(0.5f, 0.75f, 1f, 0.9f), fontSize, uiScale);
             AddRichTextBlock(content, GettingStarted_PanelModes, fontSize, uiScale);
             AddInlineImage(content, "Panel Sidebar Modes",
-                "The four sidebar states: Hidden \u2192 Peeking \u2192 Locked \u2192 Expanded",
-                0.8f, uiScale);
+                "The four sidebar states: Hidden -> Peeking -> Locked -> Expanded",
+                0.6f, uiScale);
             AddRichTextBlock(content, GettingStarted_Editing, fontSize, uiScale);
             AddInlineImage(content, "Fullscreen Mode",
                 "Fullscreen two-column layout with personal notes left, shared right",
-                0.8f, uiScale);
+                0.6f, uiScale);
             AddRichTextBlock(content, GettingStarted_AddingNotes, fontSize, uiScale);
             AddInlineImage(content, "Insert Buttons",
                 "The +Note and +Draw buttons between notes",
-                0.6f, uiScale);
+                0.45f, uiScale);
 
             // --- NOTES CONTENT ---
             AddSectionBanner(content, "NOTES CONTENT", new Color(0.4f, 0.9f, 0.5f, 0.9f), fontSize, uiScale);
             AddRichTextBlock(content, Content_Markdown, fontSize, uiScale);
             AddInlineImage(content, "Markdown: Source vs Rendered",
                 "Raw markdown on the left, formatted output on the right",
-                0.8f, uiScale);
+                0.6f, uiScale);
             AddRichTextBlock(content, Content_Drawings, fontSize, uiScale);
             AddInlineImage(content, "Drawing Toolbar",
                 "The drawing toolbar with color, size, eraser, and action buttons",
-                0.75f, uiScale);
+                0.6f, uiScale);
             AddRichTextBlock(content, Content_Organizing, fontSize, uiScale);
             AddInlineImage(content, "Drag Handle Interactions",
                 "Drag to reorder, double-click to collapse (red = collapsed)",
-                0.75f, uiScale);
+                0.6f, uiScale);
             AddRichTextBlock(content, Content_Colors, fontSize, uiScale);
 
             // --- MULTIPLAYER ---
@@ -302,19 +302,19 @@ namespace BeefsRecipes
             AddRichTextBlock(content, Ref_Settings, fontSize, uiScale);
             AddInlineImage(content, "Settings Panel",
                 "The settings overlay with sliders, input fields, and reset buttons",
-                0.7f, uiScale);
+                0.55f, uiScale);
             AddRichTextBlock(content, Ref_Saving, fontSize, uiScale);
             AddRichTextBlock(content, Ref_Tips, fontSize, uiScale);
             AddInlineImage(content, "Context Menu",
                 "Right-click menu with all available actions",
-                0.55f, uiScale);
+                0.4f, uiScale);
 
             // Reference cards at the bottom
             AddVisualCard(content, "Keyboard Shortcuts",
                 "Editing\n" +
                 "\u2022 Tab - next field\n" +
                 "\u2022 Shift+Tab - previous field\n" +
-                "\u2022 Enter - title \u2192 content\n" +
+                "\u2022 Enter - title -> content\n" +
                 "\u2022 Escape - exit / close\n" +
                 "\u2022 Ctrl+Scroll - font size\n\n" +
                 "Navigation\n" +
@@ -484,25 +484,17 @@ namespace BeefsRecipes
         }
 
         private void AddImagePlaceholder(Transform parent, string label, string description,
-            float height, float uiScale)
+            float width, float height, float uiScale)
         {
             string imageKey = label.ToLowerInvariant().Replace(" ", "_").Replace(":", "");
             Texture2D texture = LoadGuideImage(imageKey);
-
-            float aspect = 16f / 9f;
-            if (texture != null)
-                aspect = (float)texture.width / texture.height;
 
             GameObject obj = new GameObject("Placeholder_" + label.Replace(" ", ""));
             obj.transform.SetParent(parent, false);
 
             LayoutElement le = obj.AddComponent<LayoutElement>();
-            le.preferredHeight = height * uiScale;
-            le.flexibleWidth = 1f;
-
-            AspectRatioFitter arf = obj.AddComponent<AspectRatioFitter>();
-            arf.aspectMode = AspectRatioFitter.AspectMode.WidthControlsHeight;
-            arf.aspectRatio = aspect;
+            le.preferredWidth = width;
+            le.preferredHeight = height;
 
             Image bg = obj.AddComponent<Image>();
             bg.raycastTarget = true;
@@ -619,34 +611,23 @@ namespace BeefsRecipes
 
             HorizontalLayoutGroup wrapperHlg = wrapper.AddComponent<HorizontalLayoutGroup>();
             wrapperHlg.childAlignment = TextAnchor.MiddleCenter;
-            wrapperHlg.childControlWidth = false;
+            wrapperHlg.childControlWidth = true;
             wrapperHlg.childControlHeight = true;
             wrapperHlg.childForceExpandWidth = false;
             wrapperHlg.childForceExpandHeight = false;
-            int vpad = Mathf.RoundToInt(4 * uiScale);
+            int vpad = Mathf.RoundToInt(2 * uiScale);
             wrapperHlg.padding = new RectOffset(0, 0, vpad, vpad);
 
             ContentSizeFitter wrapperFitter = wrapper.AddComponent<ContentSizeFitter>();
             wrapperFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            float maxWidth = Mathf.RoundToInt(Screen.width * widthFraction);
+            float scrollbarWidth = Mathf.RoundToInt(14 * uiScale);
+            float panelWidth = Screen.width * 0.8f;
+            float columnWidth = panelWidth * 0.96f - 16f - scrollbarWidth - 4f - 16f;
+            float maxWidth = columnWidth * widthFraction;
             float imgHeight = maxWidth / (16f / 9f);
 
-            GameObject inner = new GameObject("Inner");
-            inner.transform.SetParent(wrapper.transform, false);
-
-            LayoutElement innerLE = inner.AddComponent<LayoutElement>();
-            innerLE.preferredWidth = maxWidth;
-            innerLE.preferredHeight = imgHeight;
-            innerLE.flexibleWidth = 0;
-
-            VerticalLayoutGroup innerVlg = inner.AddComponent<VerticalLayoutGroup>();
-            innerVlg.childControlWidth = true;
-            innerVlg.childControlHeight = true;
-            innerVlg.childForceExpandWidth = true;
-            innerVlg.childForceExpandHeight = true;
-
-            AddImagePlaceholder(inner.transform, label, description, 100, uiScale);
+            AddImagePlaceholder(wrapper.transform, label, description, maxWidth, imgHeight, uiScale);
         }
 
         private void ShowImagePopout(string label, string caption, Texture2D texture, float uiScale)
@@ -813,8 +794,8 @@ namespace BeefsRecipes
             try
             {
                 byte[] data = File.ReadAllBytes(filePath);
-                Texture2D tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-                tex.filterMode = FilterMode.Bilinear;
+                Texture2D tex = new Texture2D(2, 2, TextureFormat.RGBA32, true);
+                tex.filterMode = FilterMode.Trilinear;
                 tex.wrapMode = TextureWrapMode.Clamp;
 
                 if (tex.LoadImage(data))
@@ -858,7 +839,7 @@ namespace BeefsRecipes
             "**Peeking** - A quick read-only preview that slides in when you hover. Move your mouse away and it disappears.\n\n" +
             "**Peek Locked** - Click the peeking panel and it stays put. You can read your notes and click checkboxes, but you can't edit except clicking checkboxes. Click the empty background area (of the panel) to dismiss it.\n\n" +
             "**Expanded** - Click the **orange edge bar** and you're in edit mode. The panel widens and all your notes become editable.\n\n" +
-            "**Fullscreen** - Hit the expand icon (or right-click \u2192 Fullscreen) for a two-column layout. Your personal notes go on the left, shared notes on the right.";
+            "**Fullscreen** - Hit the expand icon (or right-click -> Fullscreen) for a two-column layout. Your personal notes go on the left, shared notes on the right.";
 
         private const string GettingStarted_Editing =
             "### Editing\n\n" +
@@ -898,35 +879,35 @@ namespace BeefsRecipes
 
         private const string Content_Colors =
             "### Color Picker\n\n" +
-            "The color picker pops up whenever you're changing a note color or your accent color. It's got preset swatches across the top, a saturation/value square, a hue bar, a hex input field for exact values, and 6 custom palette slots so you can save your favorite colors.";
+            "The color picker pops up whenever you're changing a note color or your badge color. It's got preset swatches across the top, a saturation/value square, a hue bar, a hex input field for exact values, and 6 custom palette slots so you can save your favorite colors.";
         private const string Multi_Sharing =
             "### Sharing Notes\n\n" +
-            "To share a note with other players, **drag it below the SHARED NOTES divider** in sidebar mode, or into the **right column** in fullscreen. You can also right-click \u2192 **Share to server**.\n\n" +
-            "To take it back, drag it back to your personal section or right-click \u2192 **Unshare**.\n\n" +
+            "To share a note with other players, **drag it below the SHARED NOTES divider** in sidebar mode, or into the **right column** in fullscreen. You can also right-click -> **Share to server**.\n\n" +
+            "To take it back, drag it back to your personal section or right-click -> **Unshare**.\n\n" +
             "Shared notes get a colored badge showing the owner's name. Only the owner can edit or unshare their notes. Changes sync to other players in near real-time.";
 
         private const string Multi_Hiding =
             "### Hiding Notes\n\n" +
-            "If someone is sharing notes you don't need to see, right-click their note \u2192 **Hide this note**. This only hides it for you, not anyone else.\n\n" +
+            "If someone is sharing notes you don't need to see, right-click their note -> **Hide this note**. This only hides it for you, not anyone else.\n\n" +
             "You can manage your hidden notes a few ways:\n\n" +
             "- The **Show Hidden** button on the divider or column header\n" +
-            "- **Settings** \u2192 Multiplayer section lists hidden notes with unhide buttons\n" +
+            "- **Settings** -> Multiplayer section lists hidden notes with unhide buttons\n" +
             "- Right-click the divider for **Hide all** / **Unhide all** options";
 
         private const string Multi_Voting =
             "### Voting & Admin Tools\n\n" +
-            "On **dedicated servers**, if someone posts inappropriate content, right-click their note \u2192 **Vote to remove**. When enough players vote (default 2), the note is automatically removed. Changed your mind? Use **Retract removal vote**.\n\n" +
-            "If you're the **host**, you get direct control - right-click any shared note \u2192 **Delete (admin)** removes it immediately. You can also **Kick** or **Ban** players from the same menu.";
+            "On **dedicated servers**, if someone posts inappropriate content, right-click their note -> **Vote to remove**. When enough players vote (default 2), the note is automatically removed. Changed your mind? Use **Retract removal vote**.\n\n" +
+            "If you're the **host**, you get direct control - right-click any shared note -> **Delete (admin)** removes it immediately. You can also **Kick** or **Ban** players from the same menu.";
 
         private const string Multi_AccentColors =
-            "### Accent Colors\n\n" +
+            "### Badge Colors\n\n" +
             "Your badge color on shared notes defaults to your **suit paint color** in-game. If your suit isn't painted, you get a color generated from your SteamID.\n\n" +
-            "To pick your own, right-click any shared note \u2192 **Change accent color**, or go to **Settings** and click the accent color swatch. Hit **reset** to go back to your suit color.";
+            "To pick your own, right-click any of your shared notes -> **Badge color (suit)**, or go to **Settings** and click the badge color swatch. Once you've set a custom color, use **Reset badge to suit color** to go back.";
         private const string Ref_Shortcuts =
             "### Keyboard Shortcuts\n\n" +
             "**Tab / Shift+Tab** - Jump to next / previous field\n" +
-            "**Enter** - Title \u2192 jumps to content (in content it adds a newline)\n" +
-            "**Escape** - Closes menus \u2192 overlays \u2192 exits editing \u2192 exits fullscreen\n" +
+            "**Enter** - Title -> jumps to content (in content it adds a newline)\n" +
+            "**Escape** - Closes menus -> overlays -> exits editing -> exits fullscreen\n" +
             "**Ctrl+Scroll** - Make text bigger or smaller\n" +
             "**Right-click** - Opens the context menu\n" +
             "**Double-click drag bar** - Collapse or expand a note\n" +
@@ -949,7 +930,7 @@ namespace BeefsRecipes
 
         private const string Ref_Tips =
             "### Tips & Tricks\n\n" +
-            "- Right-click \u2192 **Copy as markdown** to paste notes into Discord, wikis, or anywhere else\n" +
+            "- Right-click -> **Copy as markdown** to paste notes into Discord, wikis, or anywhere else\n" +
             "- **Copy all notes** grabs everything at once\n" +
             "- Empty notes automatically hide in read mode so they won't clutter things up\n" +
             "- Type --- in a note to create a visual divider line\n" +

@@ -54,15 +54,15 @@ namespace BeefsRecipes
             new Color(1f, 0.7f, 0.3f)
         };
 
-        private static float MenuWidth => 240f * RecipesUIManager.ScaleFactor;
-        private static float Padding => 8f * RecipesUIManager.ScaleFactor;
-        private static float SVSize => 150f * RecipesUIManager.ScaleFactor;
-        private static float HueBarHeight => 18f * RecipesUIManager.ScaleFactor;
-        private static float SwatchSize => 24f * RecipesUIManager.ScaleFactor;
-        private static float SwatchSpacing => 4f * RecipesUIManager.ScaleFactor;
-        private static float RowHeight => 28f * RecipesUIManager.ScaleFactor;
-        private static float SectionSpacing => 6f * RecipesUIManager.ScaleFactor;
-        private static float ButtonHeight => 24f * RecipesUIManager.ScaleFactor;
+        private static float MenuWidth => 240f * BeefsRecipesPlugin.UIScaleMultiplier.Value;
+        private static float Padding => 8f * BeefsRecipesPlugin.UIScaleMultiplier.Value;
+        private static float SVSize => 150f * BeefsRecipesPlugin.UIScaleMultiplier.Value;
+        private static float HueBarHeight => 18f * BeefsRecipesPlugin.UIScaleMultiplier.Value;
+        private static float SwatchSize => 24f * BeefsRecipesPlugin.UIScaleMultiplier.Value;
+        private static float SwatchSpacing => 4f * BeefsRecipesPlugin.UIScaleMultiplier.Value;
+        private static float RowHeight => 28f * BeefsRecipesPlugin.UIScaleMultiplier.Value;
+        private static float SectionSpacing => 6f * BeefsRecipesPlugin.UIScaleMultiplier.Value;
+        private static float ButtonHeight => 24f * BeefsRecipesPlugin.UIScaleMultiplier.Value;
 
         public static void Show(Vector2 screenPosition, Color currentColor, Action<Color> onColorSelected)
         {
@@ -266,7 +266,7 @@ namespace BeefsRecipes
             _originalImage = CreateSmallSwatch(parent, Padding, yPos, RowHeight,
                 _originalColor == Color.clear ? new Color(0.2f, 0.2f, 0.2f) : _originalColor);
 
-            CreateLabel(parent, Padding + RowHeight + 2f, yPos, 16f, RowHeight, "\u2192");
+            CreateLabel(parent, Padding + RowHeight + 2f, yPos, 16f, RowHeight, "->");
 
             _previewImage = CreateSmallSwatch(parent, Padding + RowHeight + 18f, yPos,
                 RowHeight, _previewColor);
@@ -314,7 +314,7 @@ namespace BeefsRecipes
 
             Text inputText = inputTextObj.AddComponent<Text>();
             inputText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            inputText.fontSize = Mathf.RoundToInt(13 * RecipesUIManager.ScaleFactor);
+            inputText.fontSize = Mathf.RoundToInt(13 * BeefsRecipesPlugin.UIScaleMultiplier.Value);
             inputText.color = Color.white;
             inputText.alignment = TextAnchor.MiddleLeft;
             inputText.supportRichText = false;
@@ -409,7 +409,7 @@ namespace BeefsRecipes
             Text saveLabel = saveLabelObj.AddComponent<Text>();
             saveLabel.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             saveLabel.text = "+";
-            saveLabel.fontSize = Mathf.RoundToInt(16 * RecipesUIManager.ScaleFactor);
+            saveLabel.fontSize = Mathf.RoundToInt(16 * BeefsRecipesPlugin.UIScaleMultiplier.Value);
             saveLabel.color = Color.white;
             saveLabel.alignment = TextAnchor.MiddleCenter;
             saveLabel.fontStyle = FontStyle.Bold;
@@ -587,7 +587,7 @@ namespace BeefsRecipes
             Text t = obj.AddComponent<Text>();
             t.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             t.text = text;
-            t.fontSize = Mathf.RoundToInt(13 * RecipesUIManager.ScaleFactor);
+            t.fontSize = Mathf.RoundToInt(13 * BeefsRecipesPlugin.UIScaleMultiplier.Value);
             t.color = Color.white;
             t.alignment = align;
             t.raycastTarget = false;
@@ -662,7 +662,7 @@ namespace BeefsRecipes
             Text t = textObj.AddComponent<Text>();
             t.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             t.text = label;
-            t.fontSize = Mathf.RoundToInt(12 * RecipesUIManager.ScaleFactor);
+            t.fontSize = Mathf.RoundToInt(12 * BeefsRecipesPlugin.UIScaleMultiplier.Value);
             t.color = Color.white;
             t.alignment = TextAnchor.MiddleCenter;
             t.fontStyle = FontStyle.Bold;

@@ -77,6 +77,7 @@ namespace BeefsRecipes
         private Button _gearButton;
         private Sprite _edgeButtonSprite;
         private int _lastCornerRadius = -1;
+        private Sprite _panelFullscreenSprite;
         private GameObject _fullscreenButtonObject;
         private Button _fullscreenButton;
         private GameObject _helpButtonObject;
@@ -188,6 +189,7 @@ namespace BeefsRecipes
             _backgroundImage = _panelObject.AddComponent<Image>();
             _backgroundImage.color = new Color(0, 0, 0, 0.95f);
             _backgroundImage.raycastTarget = true;
+            _backgroundImage.type = Image.Type.Sliced;
         }
 
         private void CreateEdgeButton()
@@ -211,6 +213,9 @@ namespace BeefsRecipes
             _lastCornerRadius = cornerRadius;
             edgeImage.sprite = _edgeButtonSprite;
             edgeImage.type = Image.Type.Sliced;
+
+            _panelFullscreenSprite = CreateMirroredSprite(_edgeButtonSprite, cornerRadius);
+            _backgroundImage.sprite = _edgeButtonSprite;
 
             _edgeButton = _edgeButtonObject.AddComponent<Button>();
             _edgeButton.targetGraphic = edgeImage;
@@ -488,6 +493,9 @@ namespace BeefsRecipes
                 _panelRect.anchorMax = new Vector2(1, 0.5f);
                 _panelRect.pivot = new Vector2(1, 0.5f);
             }
+
+            if (_backgroundImage != null)
+                _backgroundImage.sprite = fullscreen ? _panelFullscreenSprite : _edgeButtonSprite;
         }
 
         public void SetSidebarControlsVisible(bool visible)
@@ -1444,9 +1452,16 @@ namespace BeefsRecipes
                             Object.Destroy(_edgeButtonSprite.texture);
                             Object.Destroy(_edgeButtonSprite);
                         }
+                        if (_panelFullscreenSprite != null)
+                        {
+                            Object.Destroy(_panelFullscreenSprite.texture);
+                            Object.Destroy(_panelFullscreenSprite);
+                        }
                         _edgeButtonSprite = CreateEdgeSprite(cornerRadius);
+                        _panelFullscreenSprite = CreateMirroredSprite(_edgeButtonSprite, cornerRadius);
                         edgeImage.sprite = _edgeButtonSprite;
                         edgeImage.type = Image.Type.Sliced;
+                        _backgroundImage.sprite = _isFullscreenLayout ? _panelFullscreenSprite : _edgeButtonSprite;
                         _lastCornerRadius = cornerRadius;
                     }
                 }
@@ -1557,6 +1572,39 @@ namespace BeefsRecipes
             );
 
             return sprite;
+        }
+
+        private Sprite CreateMirroredSprite(Sprite source, int cornerRadius)
+        {
+            Texture2D srcTex = source.texture;
+            int size = srcTex.width;
+            Color[] pixels = srcTex.GetPixels();
+            Color[] result = new Color[pixels.Length];
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    int i = y * size + x;
+                    int m = y * size + (size - 1 - x);
+                    result[i] = (pixels[i].a > 0.5f && pixels[m].a > 0.5f) ? Color.white : Color.clear;
+                }
+            }
+
+            Texture2D texture = new Texture2D(size, size);
+            texture.filterMode = FilterMode.Bilinear;
+            texture.SetPixels(result);
+            texture.Apply();
+
+            return Sprite.Create(
+                texture,
+                new Rect(0, 0, size, size),
+                new Vector2(0.5f, 0.5f),
+                100f,
+                0,
+                SpriteMeshType.FullRect,
+                new Vector4(cornerRadius, cornerRadius, cornerRadius, cornerRadius)
+            );
         }
     }
 

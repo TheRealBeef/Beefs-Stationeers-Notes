@@ -266,6 +266,13 @@ namespace BeefsRecipes
                 _panelManager.RestoreSavedPanelMode(data.panelMode);
                 _panelManager.SetYOffset(data.panelYOffset);
 
+                if (!BeefsRecipesPlugin.WelcomeNoteShown.Value)
+                {
+                    _personalSections.Insert(0, CreateWelcomeSection());
+                    BeefsRecipesPlugin.WelcomeNoteShown.Value = true;
+                    SaveNotes(_currentWorldName, _currentSaveId);
+                }
+
                 RebuildUI();
                 _uiManager.ScrollPosition = data.scrollPosition;
                 RefreshAccentColors();
@@ -327,6 +334,13 @@ namespace BeefsRecipes
                 _panelManager.RestoreSavedPanelMode(data.panelMode);
                 _panelManager.SetYOffset(data.panelYOffset);
 
+                if (!BeefsRecipesPlugin.WelcomeNoteShown.Value)
+                {
+                    _personalSections.Insert(0, CreateWelcomeSection());
+                    BeefsRecipesPlugin.WelcomeNoteShown.Value = true;
+                    SavePersonalNotes();
+                }
+
                 RebuildUI();
                 _uiManager.ScrollPosition = data.scrollPosition;
                 RefreshAccentColors();
@@ -380,6 +394,35 @@ namespace BeefsRecipes
                 content = "",
                 titleColorHex = null,
                 contentColorHex = null,
+                isCollapsed = false,
+                isPublic = false,
+                ownerId = 0
+            };
+        }
+
+        private static BeefsRecipesPlugin.RecipeSection CreateWelcomeSection()
+        {
+            return new BeefsRecipesPlugin.RecipeSection
+            {
+                id = Guid.NewGuid().ToString(),
+                title = "Welcome to Beef's Recipes!",
+                content =
+                    "### Getting Started\n" +
+                    "- [ ] Hover the **right edge** of the screen to peek\n" +
+                    "- [ ] Click the **orange bar** to enter edit mode\n" +
+                    "- [ ] Press **Escape** to exit edit mode\n" +
+                    "- [ ] **Right-click** a note for options (colors, delete, share)\n" +
+                    "- [ ] Click checkboxes in read mode to toggle them \u2014 try it!\n\n" +
+                    "### Things to Try\n" +
+                    "- [ ] Use **markdown** - bold, *italic*, `code`, headers, and more\n" +
+                    "- [ ] Add sections with the **+Note** and **+Draw** buttons between notes\n" +
+                    "- [ ] **Collapse** a note by double-clicking its drag handle\n" +
+                    "- [ ] Hold **Ctrl + scroll** to resize text\n\n" +
+                    "### Multiplayer\n" +
+                    "- [ ] **Share** a note by dragging it below the divider or right-click -> Share\n" +
+                    "- [ ] **Unshare** by dragging it back or right-click -> Unshare\n" +
+                    "- [ ] Your **badge color** matches your suit paint color\n\n" +
+                    "Hit **?** for the full guide. Delete this note when you're ready!",
                 isCollapsed = false,
                 isPublic = false,
                 ownerId = 0
@@ -2100,8 +2143,18 @@ namespace BeefsRecipes
                         ShowColorPicker(mousePos, sectionId, ColorTarget.Content)));
                 }
                 items.Add(RecipesContextMenu.MenuItem.Separator());
-                items.Add(RecipesContextMenu.MenuItem.Action("Change accent color...", () =>
-                    ShowAccentColorPicker(mousePos)));
+                bool hasOverride = !string.IsNullOrEmpty(syncManager?.GetAccentColorOverride());
+                items.Add(RecipesContextMenu.MenuItem.Action(
+                    hasOverride ? "Change badge color..." : "Badge color (suit)...",
+                    () => ShowAccentColorPicker(mousePos)));
+                if (hasOverride)
+                {
+                    items.Add(RecipesContextMenu.MenuItem.Action("Reset badge to suit color", () =>
+                    {
+                        syncManager.SetAccentColorOverride(null);
+                        RefreshAccentColors();
+                    }));
+                }
                 if (syncManager != null)
                 {
                     items.Add(RecipesContextMenu.MenuItem.Action("Unshare", () =>
@@ -3624,6 +3677,18 @@ namespace BeefsRecipes
 
             if (ownerId == localId)
             {
+                var syncManager = BeefsRecipesPlugin.Instance?.ClientSyncManager;
+                if (syncManager != null)
+                {
+                    string overrideHex = syncManager.GetAccentColorOverride();
+                    if (!string.IsNullOrEmpty(overrideHex))
+                    {
+                        Color parsed;
+                        if (ColorUtility.TryParseHtmlString(overrideHex, out parsed))
+                            return parsed;
+                    }
+                }
+
                 try
                 {
                     var human = Assets.Scripts.Objects.Entities.Human.LocalHuman;

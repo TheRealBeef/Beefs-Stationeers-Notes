@@ -144,6 +144,7 @@ namespace BeefsRecipes
         public static ConfigEntry<int> StrikesBeforeKick;
         public static ConfigEntry<int> StrikesBeforeBan;
         public static ConfigEntry<bool> BanEnforcement;
+        public static ConfigEntry<bool> WelcomeNoteShown;
 
         public bool IsEditing => _panelManager?.IsEditing ?? false;
 
@@ -198,6 +199,9 @@ namespace BeefsRecipes
 
             BanEnforcement = Config.Bind("Moderation", "BanEnforcement", true,
                 "Check blacklist on player connect and disconnect banned players");
+
+            WelcomeNoteShown = Config.Bind("General", "WelcomeNoteShown", false,
+                "Set automatically after the welcome note is created on first launch");
 
             ApplyPatches();
             RecipesNetworkMessages.Initialize();
@@ -506,7 +510,7 @@ namespace BeefsRecipes
                         {
                             _contentManager?.LoadPersonalNotes(ClientSyncManager.SessionKey);
                             _contentManager?.MergePublicNotes(
-                                ClientSyncManager.GetVisiblePublicSections());
+                                ClientSyncManager.PublicSections);
                         }
                         break;
                 }
@@ -524,7 +528,7 @@ namespace BeefsRecipes
                 _contentManager.LoadPersonalNotes(ClientSyncManager.SessionKey);
             }
 
-            _contentManager.MergePublicNotes(ClientSyncManager.GetVisiblePublicSections());
+            _contentManager.MergePublicNotes(ClientSyncManager.PublicSections);
         }
 
         private void OnNetworkSectionUpdated(RecipeSection section)

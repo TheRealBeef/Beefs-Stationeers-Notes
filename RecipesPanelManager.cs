@@ -345,7 +345,9 @@ namespace BeefsRecipes
             _isHoveringEdge = mouseOverEdge;
 
             bool hoveringRightEdge = Input.mousePosition.x >= Screen.width - BeefsRecipesPlugin.HoverZoneWidth.Value;
-            _isHoveringPanel = mouseOverPanel || mouseOverEdge || mouseOverSlide || mouseOverGear || mouseOverFullscreen || mouseOverHelp || hoveringRightEdge;
+            bool includeEdgeHover = hoveringRightEdge &&
+                (_targetState == PanelState.Hidden || _targetState == PanelState.Peeking);
+            _isHoveringPanel = mouseOverPanel || mouseOverEdge || mouseOverSlide || mouseOverGear || mouseOverFullscreen || mouseOverHelp || includeEdgeHover;
 
             if (_currentState == PanelState.Fullscreen || _targetState == PanelState.Fullscreen)
             {

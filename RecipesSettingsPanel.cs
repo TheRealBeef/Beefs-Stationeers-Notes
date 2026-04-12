@@ -544,6 +544,17 @@ namespace BeefsRecipes
             var syncManager = BeefsRecipesPlugin.Instance?.ClientSyncManager;
             if (syncManager == null) return;
 
+            ulong localId = 0;
+            try { localId = Assets.Scripts.Networking.NetworkManager.LocalClientId; } catch { }
+            string myHex = syncManager.GetPlayerColor(localId);
+            Color myAccent = new Color(0.5f, 0.8f, 1f);
+            if (!string.IsNullOrEmpty(myHex))
+                ColorUtility.TryParseHtmlString(myHex, out myAccent);
+
+            string currentOverride = syncManager.GetAccentColorOverride();
+            bool hasOverride = !string.IsNullOrEmpty(currentOverride);
+
+            // --- Row 1: label + swatch bar ---
             GameObject rowObj = new GameObject("AccentColorRow");
             rowObj.transform.SetParent(_contentRect, false);
 
@@ -564,7 +575,7 @@ namespace BeefsRecipes
 
             Text labelText = labelObj.AddComponent<Text>();
             labelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            labelText.text = "Your accent color";
+            labelText.text = "Badge color";
             labelText.fontSize = fontSize;
             labelText.color = new Color(0.8f, 0.8f, 0.8f, 0.9f);
             labelText.alignment = TextAnchor.MiddleLeft;
@@ -573,29 +584,122 @@ namespace BeefsRecipes
             LayoutElement labelLE = labelObj.AddComponent<LayoutElement>();
             labelLE.preferredWidth = 120 * BeefsRecipesPlugin.UIScaleMultiplier.Value;
 
-            int swatchSize = fontSize + 4;
+            float swatchWidth = 80 * BeefsRecipesPlugin.UIScaleMultiplier.Value;
+            int swatchHeight = fontSize + 2;
             GameObject swatchObj = new GameObject("AccentSwatch");
             swatchObj.transform.SetParent(rowObj.transform, false);
 
             LayoutElement swatchLE = swatchObj.AddComponent<LayoutElement>();
-            swatchLE.preferredWidth = swatchSize;
-            swatchLE.preferredHeight = swatchSize;
+            swatchLE.preferredWidth = swatchWidth;
+            swatchLE.preferredHeight = swatchHeight;
 
             Image swatchImage = swatchObj.AddComponent<Image>();
-            ulong localId = 0;
-            try { localId = Assets.Scripts.Networking.NetworkManager.LocalClientId; } catch { }
-            string myHex = syncManager.GetPlayerColor(localId);
-            Color myAccent = new Color(0.5f, 0.8f, 1f);
-            if (!string.IsNullOrEmpty(myHex))
-                ColorUtility.TryParseHtmlString(myHex, out myAccent);
             swatchImage.color = myAccent;
             swatchImage.raycastTarget = true;
 
             Button swatchButton = swatchObj.AddComponent<Button>();
             swatchButton.targetGraphic = swatchImage;
+
+            // --- Row 2: status subtitle (both states created, toggled dynamically) ---
+            GameObject subtitleObj = new GameObject("AccentSubtitle");
+            subtitleObj.transform.SetParent(_contentRect, false);
+
+            LayoutElement subtitleLE = subtitleObj.AddComponent<LayoutElement>();
+            subtitleLE.preferredHeight = fontSize;
+
+            HorizontalLayoutGroup subtitleLayout = subtitleObj.AddComponent<HorizontalLayoutGroup>();
+            subtitleLayout.childControlWidth = false;
+            subtitleLayout.childControlHeight = true;
+            subtitleLayout.childForceExpandWidth = false;
+            subtitleLayout.spacing = 0;
+            subtitleLayout.padding = new RectOffset(
+                4 + Mathf.RoundToInt(120 * BeefsRecipesPlugin.UIScaleMultiplier.Value) + 8,
+                4, 0, 0);
+            subtitleLayout.childAlignment = TextAnchor.MiddleLeft;
+
+            int subFontSize = Mathf.Max(10, fontSize - 2);
+
+            // -- Suit color state --
+            GameObject suitLabel = new GameObject("SuitLabel");
+            suitLabel.transform.SetParent(subtitleObj.transform, false);
+
+            Text suitText = suitLabel.AddComponent<Text>();
+            suitText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            suitText.text = "Mirroring suit color";
+            suitText.fontSize = subFontSize;
+            suitText.color = new Color(0.55f, 0.55f, 0.55f, 0.7f);
+            suitText.alignment = TextAnchor.MiddleLeft;
+            suitText.raycastTarget = false;
+
+            LayoutElement suitLE = suitLabel.AddComponent<LayoutElement>();
+            suitLE.preferredWidth = suitText.preferredWidth + 4;
+
+            // -- Custom override state --
+            GameObject customGroup = new GameObject("CustomGroup");
+            customGroup.transform.SetParent(subtitleObj.transform, false);
+
+            HorizontalLayoutGroup customLayout = customGroup.AddComponent<HorizontalLayoutGroup>();
+            customLayout.childControlWidth = false;
+            customLayout.childControlHeight = true;
+            customLayout.childForceExpandWidth = false;
+            customLayout.spacing = 0;
+            customLayout.childAlignment = TextAnchor.MiddleLeft;
+
+            GameObject customLabel = new GameObject("CustomLabel");
+            customLabel.transform.SetParent(customGroup.transform, false);
+
+            Text customText = customLabel.AddComponent<Text>();
+            customText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            customText.text = "Custom \u00b7 ";
+            customText.fontSize = subFontSize;
+            customText.color = new Color(0.55f, 0.55f, 0.55f, 0.8f);
+            customText.alignment = TextAnchor.MiddleLeft;
+            customText.raycastTarget = false;
+
+            LayoutElement customLE = customLabel.AddComponent<LayoutElement>();
+            customLE.preferredWidth = customText.preferredWidth + 4;
+
+            GameObject resetObj = new GameObject("ResetLink");
+            resetObj.transform.SetParent(customGroup.transform, false);
+
+            Text resetText = resetObj.AddComponent<Text>();
+            resetText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            resetText.text = "Use suit color";
+            resetText.fontSize = subFontSize;
+            resetText.color = new Color(0.7f, 0.55f, 0.3f, 0.9f);
+            resetText.alignment = TextAnchor.MiddleLeft;
+            resetText.raycastTarget = true;
+
+            LayoutElement resetLE = resetObj.AddComponent<LayoutElement>();
+            resetLE.preferredWidth = resetText.preferredWidth + 4;
+
+            Button resetBtn = resetObj.AddComponent<Button>();
+            resetBtn.targetGraphic = resetText;
+            resetBtn.transition = Selectable.Transition.ColorTint;
+            ColorBlock resetColors = resetBtn.colors;
+            resetColors.normalColor = resetText.color;
+            resetColors.highlightedColor = new Color(1f, 0.7f, 0.4f, 1f);
+            resetColors.pressedColor = new Color(1f, 0.8f, 0.5f, 1f);
+            resetBtn.colors = resetColors;
+
+            resetBtn.onClick.AddListener(() =>
+            {
+                syncManager.SetAccentColorOverride(null);
+                string newHex = syncManager.GetPlayerColor(localId);
+                Color newColor = new Color(0.5f, 0.8f, 1f);
+                if (!string.IsNullOrEmpty(newHex))
+                    ColorUtility.TryParseHtmlString(newHex, out newColor);
+                swatchImage.color = newColor;
+                suitLabel.SetActive(true);
+                customGroup.SetActive(false);
+            });
+
+            suitLabel.SetActive(!hasOverride);
+            customGroup.SetActive(hasOverride);
+
             swatchButton.onClick.AddListener(() =>
             {
-                RecipesColorPicker.Show(Input.mousePosition, myAccent, (selectedColor) =>
+                RecipesColorPicker.Show(Input.mousePosition, swatchImage.color, (selectedColor) =>
                 {
                     string hex = selectedColor == Color.clear
                         ? null
@@ -607,53 +711,10 @@ namespace BeefsRecipes
                     if (!string.IsNullOrEmpty(newHex))
                         ColorUtility.TryParseHtmlString(newHex, out newColor);
                     swatchImage.color = newColor;
+                    suitLabel.SetActive(false);
+                    customGroup.SetActive(true);
                 });
             });
-
-            string currentOverride = syncManager.GetAccentColorOverride();
-            if (!string.IsNullOrEmpty(currentOverride))
-            {
-                GameObject resetObj = new GameObject("ResetAccent");
-                resetObj.transform.SetParent(rowObj.transform, false);
-
-                LayoutElement resetLE = resetObj.AddComponent<LayoutElement>();
-                resetLE.preferredWidth = 50 * BeefsRecipesPlugin.UIScaleMultiplier.Value;
-                resetLE.preferredHeight = fontSize + 4;
-
-                Image resetBg = resetObj.AddComponent<Image>();
-                resetBg.color = new Color(0.3f, 0.3f, 0.3f, 0.6f);
-                resetBg.raycastTarget = true;
-
-                Button resetBtn = resetObj.AddComponent<Button>();
-                resetBtn.targetGraphic = resetBg;
-
-                GameObject resetTextObj = new GameObject("Text");
-                resetTextObj.transform.SetParent(resetObj.transform, false);
-
-                RectTransform resetTextRect = resetTextObj.AddComponent<RectTransform>();
-                resetTextRect.anchorMin = Vector2.zero;
-                resetTextRect.anchorMax = Vector2.one;
-                resetTextRect.offsetMin = Vector2.zero;
-                resetTextRect.offsetMax = Vector2.zero;
-
-                Text resetText = resetTextObj.AddComponent<Text>();
-                resetText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-                resetText.text = "reset";
-                resetText.fontSize = Mathf.Max(10, fontSize - 2);
-                resetText.color = new Color(0.7f, 0.7f, 0.7f);
-                resetText.alignment = TextAnchor.MiddleCenter;
-                resetText.raycastTarget = false;
-
-                resetBtn.onClick.AddListener(() =>
-                {
-                    syncManager.SetAccentColorOverride(null);
-                    string newHex = syncManager.GetPlayerColor(localId);
-                    Color newColor = new Color(0.5f, 0.8f, 1f);
-                    if (!string.IsNullOrEmpty(newHex))
-                        ColorUtility.TryParseHtmlString(newHex, out newColor);
-                    swatchImage.color = newColor;
-                });
-            }
         }
 
         private void CreateUnhideRow(string sectionId, string label, int fontSize,
