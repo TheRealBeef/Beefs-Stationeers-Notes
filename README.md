@@ -64,6 +64,12 @@ See: [https://github.com/StationeersLaunchPad/StationeersLaunchPad](https://gith
 Hover your mouse over the right edge of the screen to reveal the notes panel. Notes automatically save when you save your game.
 
 ## Changelog
+>### Version 1.1.1
+> - Now recognizes * [ ] as valid checkbox syntax
+> - Fix filename sanitization
+> - Use new SLP networking
+> - Rebuild for new update
+
 >### Version 1.1.0
 >- Multiplayer (dedicated/non-dedicated) support
 >- Drawing canvas with brush, eraser, and undo
