@@ -81,6 +81,8 @@ namespace BeefsRecipes
                 saveId = worldName;
             }
 
+            saveId = ServerNoteManager.SanitizePathSegment(saveId);
+
             var worldDir = StationSaveUtils.GetWorldSaveDirectory(worldName);
             var notesDir = Path.Combine(worldDir.FullName, NotesFolder);
 

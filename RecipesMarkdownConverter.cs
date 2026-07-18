@@ -63,7 +63,7 @@ namespace BeefsRecipes
                     continue;
                 }
 
-                var checkboxMatch = Regex.Match(processedLine, @"^(\s*)-\s+\[([ xX])\]\s+(.+)$");
+                var checkboxMatch = Regex.Match(processedLine, @"^(\s*)[-*]\s+\[([ xX])\]\s+(.+)$");
                 if (checkboxMatch.Success)
                 {
                     bool isChecked = checkboxMatch.Groups[2].Value.ToLower() == "x";
@@ -146,7 +146,7 @@ namespace BeefsRecipes
                 return markdown;
 
             var line = lines[lineNumber];
-            var checkboxMatch = Regex.Match(line, @"^(\s*-\s+\[)([ xX])(\]\s+.+)$");
+            var checkboxMatch = Regex.Match(line, @"^(\s*[-*]\s+\[)([ xX])(\]\s+.+)$");
 
             if (checkboxMatch.Success)
             {

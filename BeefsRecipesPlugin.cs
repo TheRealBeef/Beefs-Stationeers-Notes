@@ -260,11 +260,6 @@ namespace BeefsRecipes
                     _contentManager.SavePersonalNotes();
                 }
             }
-
-            if (Time.frameCount % 900 == 0)
-            {
-                RecipesNetworkMessages.CleanupStaleTransfers();
-            }
         }
 
         private void OnDestroy()
@@ -563,12 +558,15 @@ namespace BeefsRecipes
             ServerNoteManager?.SnapshotPublicNotes(saveFileName);
         }
 
-        public void OnSaveAs(string worldName)
+        public void OnSaveAs(string worldName, string saveFileName = null)
         {
             if (!isWorldLoaded) return;
             if (string.IsNullOrEmpty(worldName)) return;
 
-            string saveFileName = worldName;
+            if (string.IsNullOrEmpty(saveFileName))
+            {
+                saveFileName = worldName;
+            }
             _contentManager?.SaveNotes(worldName, saveFileName);
 
             ServerNoteManager?.SnapshotPublicNotes(saveFileName);

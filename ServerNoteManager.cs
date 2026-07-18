@@ -6,6 +6,7 @@ using System.Text;
 using Assets.Scripts;
 using Assets.Scripts.Networking;
 using BepInEx;
+using LaunchPadBooster.Networking;
 using Newtonsoft.Json;
 
 namespace BeefsRecipes
@@ -182,8 +183,6 @@ namespace BeefsRecipes
             {
                 kvp.Value.Remove(clientId);
             }
-
-            RecipesNetworkMessages.ClearTransfersForClient(clientId);
 
             BeefsRecipesPlugin.Log.LogInfo($"Client disconnected from notes: {clientId}");
 
@@ -575,9 +574,28 @@ namespace BeefsRecipes
             return dir;
         }
 
+        internal static string SanitizePathSegment(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return "_";
+
+            string result = Assets.Scripts.Serialization.SaveHelper.SanitizeSaveName(name);
+
+            var sb = new StringBuilder(result.Length);
+            foreach (char c in result)
+            {
+                sb.Append(char.IsControl(c) ? '_' : c);
+            }
+
+            result = sb.ToString().TrimEnd('.', ' ');
+            return result.Length == 0 ? "_" : result;
+        }
+
+        private string SafeWorldName => SanitizePathSegment(_worldName);
+
         private string GetWorldDir()
         {
-            string dir = Path.Combine(GetConfigDir(), _worldName);
+            string dir = Path.Combine(GetConfigDir(), SafeWorldName);
             if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
             return dir;
@@ -585,7 +603,7 @@ namespace BeefsRecipes
 
         private string GetHeadPath()
         {
-            return Path.Combine(GetWorldDir(), $"{_worldName}_public.json");
+            return Path.Combine(GetWorldDir(), $"{SafeWorldName}_public.json");
         }
 
         private string GetSnapshotDir()
@@ -598,7 +616,7 @@ namespace BeefsRecipes
 
         private string GetSnapshotPath(string saveFileName)
         {
-            return Path.Combine(GetSnapshotDir(), $"{_worldName}_{saveFileName}_public.json");
+            return Path.Combine(GetSnapshotDir(), $"{SafeWorldName}_{SanitizePathSegment(saveFileName)}_public.json");
         }
 
         private void LoadPublicNotes(string saveFileName)
@@ -724,21 +742,33 @@ namespace BeefsRecipes
             foreach (var kvp in _playerColors)
                 colorDict[kvp.Key.ToString()] = kvp.Value;
 
-            RecipesNetworkMessages.SendSyncResponse(
-                clientSteamId,
-                _sessionKey,
-                JsonConvert.SerializeObject(_publicSections),
-                JsonConvert.SerializeObject(votedSections),
-                JsonConvert.SerializeObject(colorDict),
-                JsonConvert.SerializeObject(new List<ulong>(_connectedClients)));
+            var client = RecipesNetworkMessages.FindClientBySteamId(clientSteamId);
+            if (client == null)
+            {
+                BeefsRecipesPlugin.Log.LogWarning(
+                    $"SendSyncToClient: no Client with SteamID {clientSteamId}");
+                return;
+            }
+
+            new NotesSyncResponse
+            {
+                SessionKey = _sessionKey,
+                SectionsJson = JsonConvert.SerializeObject(_publicSections),
+                VotedSectionsJson = JsonConvert.SerializeObject(votedSections),
+                PlayerColorsJson = JsonConvert.SerializeObject(colorDict),
+                OnlinePlayerIdsJson = JsonConvert.SerializeObject(new List<ulong>(_connectedClients))
+            }.SendToClient(client);
         }
 
         private void BroadcastSectionUpdate(BeefsRecipesPlugin.RecipeSection section, bool isDelete)
         {
             if (Assets.Scripts.NetworkServer.HasClients())
             {
-                RecipesNetworkMessages.BroadcastSectionUpdate(
-                    JsonConvert.SerializeObject(section), isDelete);
+                new NotesBroadcastUpdate
+                {
+                    SectionJson = JsonConvert.SerializeObject(section),
+                    IsDelete = isDelete
+                }.SendAll(-1L);
             }
 
             if (BeefsRecipesPlugin.RuntimeContext.IsHostAdmin)
@@ -752,11 +782,11 @@ namespace BeefsRecipes
         {
             if (Assets.Scripts.NetworkServer.HasClients())
             {
-                RecipesNetworkMessages.BroadcastToAll(new NotesVoteUpdate
+                new NotesVoteUpdate
                 {
                     SectionId = sectionId,
                     VoteCount = voteCount
-                });
+                }.SendAll(-1L);
             }
 
             if (BeefsRecipesPlugin.RuntimeContext.IsHostAdmin)
@@ -770,11 +800,11 @@ namespace BeefsRecipes
         {
             if (Assets.Scripts.NetworkServer.HasClients())
             {
-                RecipesNetworkMessages.BroadcastToAll(new NotesPlayerColorBroadcast
+                new NotesPlayerColorBroadcast
                 {
                     ClientId = clientId,
                     ColorHex = colorHex
-                });
+                }.SendAll(-1L);
             }
 
             if (BeefsRecipesPlugin.RuntimeContext.IsHostAdmin)
@@ -788,11 +818,11 @@ namespace BeefsRecipes
         {
             if (Assets.Scripts.NetworkServer.HasClients())
             {
-                RecipesNetworkMessages.BroadcastToAll(new NotesPlayerPresence
+                new NotesPlayerPresence
                 {
                     ClientId = clientId,
                     IsOnline = isOnline
-                });
+                }.SendAll(-1L);
             }
 
             if (BeefsRecipesPlugin.RuntimeContext.IsHostAdmin)

@@ -15,6 +15,8 @@ namespace BeefsRecipes
     {
         private static string _loadedSaveFilePath = null;
 
+        internal static string LastRealSaveFileName = null;
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(InputWindowBase), "get_IsInputWindow")]
         static void IsInputWindow_Postfix(ref bool __result)
@@ -143,6 +145,7 @@ namespace BeefsRecipes
         static void Save_Prefix(DirectoryInfo saveDirectory, string saveFileName, out string __state)
         {
             __state = saveFileName;
+            LastRealSaveFileName = saveFileName;
         }
 
         [HarmonyPostfix]
@@ -183,9 +186,16 @@ namespace BeefsRecipes
             return result;
         }
 
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(SaveHelper), "DoSaveAs")]
+        static void DoSaveAs_Prefix()
+        {
+            LastRealSaveFileName = null;
+        }
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(SaveHelper), "DoSaveAs")]
-        static void DoSaveAs_Postfix(string stationName, ref UniTask<SaveResult> __result)
+        static void DoSaveAs_Postfix(string stationName, string saveFileName, ref UniTask<SaveResult> __result)
         {
             if (BeefsRecipesPlugin.Instance == null) return;
             if (!BeefsRecipesPlugin.Instance.isWorldLoaded)
@@ -194,12 +204,13 @@ namespace BeefsRecipes
             }
 
             var originalTask = __result;
-            __result = CopyNotesToHeadAfterSaveAs(originalTask, stationName);
+            __result = CopyNotesToHeadAfterSaveAs(originalTask, stationName, saveFileName);
         }
 
         private static async UniTask<SaveResult> CopyNotesToHeadAfterSaveAs(
             UniTask<SaveResult> originalTask,
-            string stationName)
+            string stationName,
+            string requestedSaveFileName)
         {
             SaveResult result = await originalTask;
 
@@ -207,7 +218,15 @@ namespace BeefsRecipes
             {
                 try
                 {
-                    BeefsRecipesPlugin.Instance.OnSaveAs(stationName);
+                    string realName;
+                    if (!string.IsNullOrEmpty(LastRealSaveFileName))
+                        realName = Path.GetFileNameWithoutExtension(LastRealSaveFileName);
+                    else if (!string.IsNullOrEmpty(requestedSaveFileName))
+                        realName = requestedSaveFileName;
+                    else
+                        realName = stationName;
+
+                    BeefsRecipesPlugin.Instance.OnSaveAs(stationName, realName);
                 }
                 catch (Exception ex)
                 {

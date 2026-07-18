@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Assets.Scripts.Objects.Entities;
 using BepInEx;
+using LaunchPadBooster.Networking;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -185,10 +186,10 @@ namespace BeefsRecipes
 
         private void RequestFullSync()
         {
-            RecipesNetworkMessages.SendToServer(new NotesSyncRequest
+            new NotesSyncRequest
             {
                 SenderSteamId = GetLocalClientId()
-            });
+            }.SendToHost();
             BeefsRecipesPlugin.Log.LogInfo("Requesting full sync from server");
         }
 
@@ -290,9 +291,11 @@ namespace BeefsRecipes
                 return;
             }
 
-            RecipesNetworkMessages.SendSectionPush(
-                GetLocalClientId(),
-                JsonConvert.SerializeObject(section));
+            new NotesSectionPush
+            {
+                SenderSteamId = GetLocalClientId(),
+                SectionJson = JsonConvert.SerializeObject(section)
+            }.SendToHost();
         }
 
         private void SendDeleteToServer(string sectionId)
@@ -304,11 +307,11 @@ namespace BeefsRecipes
                 return;
             }
 
-            RecipesNetworkMessages.SendToServer(new NotesSectionDelete
+            new NotesSectionDelete
             {
                 SenderSteamId = GetLocalClientId(),
                 SectionId = sectionId
-            });
+            }.SendToHost();
         }
 
         private void SendVoteToServer(string sectionId)
@@ -320,11 +323,11 @@ namespace BeefsRecipes
                 return;
             }
 
-            RecipesNetworkMessages.SendToServer(new NotesVoteRemove
+            new NotesVoteRemove
             {
                 SenderSteamId = GetLocalClientId(),
                 SectionId = sectionId
-            });
+            }.SendToHost();
         }
 
         private void SendRedactToServer(string sectionId)
@@ -336,11 +339,11 @@ namespace BeefsRecipes
                 return;
             }
 
-            RecipesNetworkMessages.SendToServer(new NotesVoteRedact
+            new NotesVoteRedact
             {
                 SenderSteamId = GetLocalClientId(),
                 SectionId = sectionId
-            });
+            }.SendToHost();
         }
 
         private static bool IsLocalHost()
@@ -396,11 +399,11 @@ namespace BeefsRecipes
             }
             else
             {
-                RecipesNetworkMessages.SendToServer(new NotesPlayerColor
+                new NotesPlayerColor
                 {
                     SenderSteamId = GetLocalClientId(),
                     ColorHex = hex
-                });
+                }.SendToHost();
             }
 
             BeefsRecipesPlugin.Log.LogInfo($"Announced accent color: {hex}");
