@@ -3016,45 +3016,145 @@ namespace BeefsRecipes
             }
         }
 
-        private static int GetLogicalLineFromLocalPoint(Text text, Vector2 localPoint)
+        private static int GetCheckboxIndexFromScreenPoint(Text text, Vector2 screenPoint)
         {
-            TextGenerator gen = text.cachedTextGenerator;
-            if (gen == null || gen.lineCount == 0)
+            TextGenerator generator = text.cachedTextGenerator;
+            if (generator == null || generator.lineCount == 0)
                 return -1;
 
-            var lines = gen.lines;
+            int visualLine = GetVisualLineFromScreenPoint(text, generator, screenPoint);
+            if (visualLine < 0)
+                return -1;
 
-            int visualLine = -1;
-            for (int i = 0; i < lines.Count; i++)
+            string[] richTextLines = (text.text ?? string.Empty).Split('\n');
+            int logicalLine = GetLogicalLineFromVisualLine(text, richTextLines, visualLine);
+            if (logicalLine < 0 || logicalLine >= richTextLines.Length ||
+                !IsRenderedCheckboxLine(richTextLines[logicalLine]))
+                return -1;
+
+            // CheckboxInfo is produced in source order. Mapping by ordinal avoids
+            // relying on UILineInfo.startCharIdx, whose rich-text semantics differ
+            // from the original markdown character and line indexes.
+            int checkboxIndex = 0;
+            for (int lineIndex = 0; lineIndex < logicalLine; lineIndex++)
             {
-                float lineTop = lines[i].topY;
-                float lineBottom = lineTop - lines[i].height;
+                if (IsRenderedCheckboxLine(richTextLines[lineIndex]))
+                    checkboxIndex++;
+            }
 
-                if (localPoint.y <= lineTop && localPoint.y > lineBottom)
+            return checkboxIndex;
+        }
+
+        private static int GetVisualLineFromScreenPoint(
+            Text text,
+            TextGenerator generator,
+            Vector2 screenPoint)
+        {
+            var lines = generator.lines;
+            if (lines == null || lines.Count == 0)
+                return -1;
+
+            float pixelsPerUnit = text.pixelsPerUnit;
+            if (pixelsPerUnit <= 0.0001f)
+                return -1;
+
+            float unitsPerPixel = 1f / pixelsPerUnit;
+            Vector2 referencePoint = Vector2.zero;
+            Vector2 roundingOffset = Vector2.zero;
+            var vertices = generator.verts;
+            if (vertices != null && vertices.Count > 0)
+            {
+                referencePoint = (Vector2)vertices[0].position * unitsPerPixel;
+                roundingOffset = text.PixelAdjustPoint(referencePoint) - referencePoint;
+            }
+
+            Camera renderCamera = text.canvas != null &&
+                                  text.canvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? text.canvas.worldCamera
+                : null;
+
+            int bestLine = -1;
+            float bestCenterDistance = float.MaxValue;
+
+            for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
+            {
+                float localTop = lines[lineIndex].topY * unitsPerPixel + roundingOffset.y;
+                float localBottom =
+                    (lines[lineIndex].topY - lines[lineIndex].height) * unitsPerPixel +
+                    roundingOffset.y;
+                Vector3 topWorld = text.rectTransform.TransformPoint(
+                    new Vector3(referencePoint.x + roundingOffset.x, localTop, 0f));
+                Vector3 bottomWorld = text.rectTransform.TransformPoint(
+                    new Vector3(referencePoint.x + roundingOffset.x, localBottom, 0f));
+                float topScreenY = RectTransformUtility.WorldToScreenPoint(
+                    renderCamera,
+                    topWorld).y;
+                float bottomScreenY = RectTransformUtility.WorldToScreenPoint(
+                    renderCamera,
+                    bottomWorld).y;
+                float lineTop = Mathf.Max(topScreenY, bottomScreenY);
+                float lineBottom = Mathf.Min(topScreenY, bottomScreenY);
+                float tolerance = 2f;
+
+                if (screenPoint.y > lineTop + tolerance ||
+                    screenPoint.y <= lineBottom - tolerance)
                 {
-                    visualLine = i;
-                    break;
+                    continue;
+                }
+
+                float lineCenter = (lineTop + lineBottom) * 0.5f;
+                float centerDistance = Mathf.Abs(screenPoint.y - lineCenter);
+                if (centerDistance < bestCenterDistance)
+                {
+                    bestLine = lineIndex;
+                    bestCenterDistance = centerDistance;
                 }
             }
 
-            if (visualLine < 0) return -1;
+            return bestLine;
+        }
 
-            int targetVisibleIdx = lines[visualLine].startCharIdx;
-            string richText = text.text;
-            int logicalLine = 0;
-            int visibleCount = 0;
-            bool inTag = false;
+        private static int GetLogicalLineFromVisualLine(
+            Text text,
+            string[] richTextLines,
+            int targetVisualLine)
+        {
+            TextGenerationSettings settings = text.GetGenerationSettings(
+                text.rectTransform.rect.size);
+            int firstVisualLine = 0;
 
-            for (int i = 0; i < richText.Length && visibleCount < targetVisibleIdx; i++)
+            using (TextGenerator lineGenerator = new TextGenerator())
             {
-                char c = richText[i];
-                if (c == '<') { inTag = true; continue; }
-                if (inTag) { if (c == '>') inTag = false; continue; }
-                if (c == '\n') logicalLine++;
-                visibleCount++;
+                for (int logicalLine = 0;
+                     logicalLine < richTextLines.Length;
+                     logicalLine++)
+                {
+                    lineGenerator.Populate(richTextLines[logicalLine], settings);
+                    int visualLineCount = Mathf.Max(1, lineGenerator.lineCount);
+                    if (targetVisualLine < firstVisualLine + visualLineCount)
+                        return logicalLine;
+
+                    firstVisualLine += visualLineCount;
+                }
             }
 
-            return logicalLine;
+            return -1;
+        }
+
+        private static bool IsRenderedCheckboxLine(string richTextLine)
+        {
+            if (string.IsNullOrEmpty(richTextLine))
+                return false;
+
+            int index = 0;
+            while (index < richTextLine.Length &&
+                   (richTextLine[index] == ' ' || richTextLine[index] == '\t'))
+            {
+                index++;
+            }
+
+            return index < richTextLine.Length &&
+                   (richTextLine[index] == '\u2610' || richTextLine[index] == '\u2611');
         }
 
         public bool IsCheckboxHere(GameObject displayTextObject, Vector2 screenPosition)
@@ -3070,16 +3170,11 @@ namespace BeefsRecipes
                     if (section != null && section.isPublic && section.ownerId != GetLocalClientId())
                         return false;
 
-                    RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                        kvp.Value.DisplayText.rectTransform,
-                        screenPosition,
-                        null,
-                        out Vector2 localPoint);
-
-                    int lineClicked = GetLogicalLineFromLocalPoint(kvp.Value.DisplayText, localPoint);
-
-                    var checkbox = _sectionCheckboxes[kvp.Value.SectionId].Find(cb => cb.LineNumber == lineClicked);
-                    return checkbox != null;
+                    int checkboxIndex = GetCheckboxIndexFromScreenPoint(
+                        kvp.Value.DisplayText,
+                        screenPosition);
+                    return checkboxIndex >= 0 &&
+                           checkboxIndex < _sectionCheckboxes[kvp.Value.SectionId].Count;
                 }
             }
             return false;
@@ -3547,21 +3642,20 @@ namespace BeefsRecipes
             var sectionUI = _sectionUIMap[sectionId];
             Text displayText = sectionUI.DisplayText;
 
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                displayText.rectTransform,
-                eventData.position,
-                eventData.pressEventCamera,
-                out Vector2 localPoint);
-
-            int lineClicked = GetLogicalLineFromLocalPoint(displayText, localPoint);
-
-            var checkbox = _sectionCheckboxes[sectionId].Find(cb => cb.LineNumber == lineClicked);
-            if (checkbox != null)
+            int checkboxIndex = GetCheckboxIndexFromScreenPoint(
+                displayText,
+                eventData.position);
+            var checkboxes = _sectionCheckboxes[sectionId];
+            if (checkboxIndex >= 0 && checkboxIndex < checkboxes.Count)
             {
+                var checkbox = checkboxes[checkboxIndex];
 
                 if (section != null)
                 {
-                    section.content = NotesMarkdownConverter.UpdateCheckbox(section.content, lineClicked, !checkbox.IsChecked);
+                    section.content = NotesMarkdownConverter.UpdateCheckbox(
+                        section.content,
+                        checkbox.LineNumber,
+                        !checkbox.IsChecked);
                     ApplyState();
 
                     if (section.isPublic && section.ownerId == GetLocalClientId())
