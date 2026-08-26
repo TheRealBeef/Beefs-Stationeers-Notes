@@ -64,6 +64,9 @@ See: [https://github.com/StationeersLaunchPad/StationeersLaunchPad](https://gith
 Hover your mouse over the right edge of the screen to reveal the notes panel. Notes automatically save when you save your game.
 
 ## Changelog
+>### Version v1.1.2
+> - Build against Power Line update
+
 >### Version 1.1.1
 > - Now recognizes * [ ] as valid checkbox syntax
 > - Fix filename sanitization

@@ -2,7 +2,7 @@
 <ModMetadata xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <Name>Beef's Recipes</Name>
     <Author>TheRealBeef</Author>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
 
     <Description>
         [h1]Beef's Recipes[/h1]
@@ -54,6 +54,9 @@
     <WorkshopHandle>3599774881</WorkshopHandle>
 
     <ChangeLog>
+        v1.1.2
+        - Build against Power Line update
+
         v1.1.1
         - Now recognizes * [ ] as valid checkbox syntax
         - Fix filename sanitization
